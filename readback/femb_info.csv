@@ -1,8 +1,8 @@
 ﻿tester,lke
-SLOT0,1826-1K-35
-SLOT1,1826-1K-37
-SLOT2,
-SLOT3,
+SLOT0,0
+SLOT1,1
+SLOT2,2
+SLOT3,3
 test_site,BNL
 toy_TPC,y
 comment,QC test
