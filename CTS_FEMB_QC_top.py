@@ -418,6 +418,7 @@ print("  WELCOME TO CTS COLD ELECTRONICS QC SYSTEM")
 print("  Brookhaven National Laboratory (BNL)")
 print("=" * 70 + Style.RESET_ALL)
 input_name = input('Please enter your name:\n' + Fore.YELLOW + '>> ' + Style.RESET_ALL)
+receiver = get_email()
 print(Fore.YELLOW + "\nIs there a CE box support structure in the CTS chamber now?" + Style.RESET_ALL)
 print("  " + Fore.GREEN + "'N'" + Style.RESET_ALL + " - No, this is a fresh start (normal flow)")
 print("  " + Fore.CYAN + "'Y'" + Style.RESET_ALL + " - Yes")
@@ -460,7 +461,7 @@ time.sleep(1)
 # current_dir = os.path.dirname(os.path.abspath(__file__))
 # os.system(f'gnome-terminal --title="CTS Monitor" --hide-menubar --geometry=15x5-0-0 --working-directory="{current_dir}" -- bash -c "python3 {script}; exec bash" &')
 # print(f"✓ check CTS Monitor Launched" + Fore.GREEN + "(A terminal for real time analysis is launched, please minimize it.)" + Style.RESET_ALL)
-# receiver = get_email()
+
 update_email_receiver_in_config(receiver)
 
 shifter_log_url = "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?usp=sharing"
@@ -1721,11 +1722,36 @@ if 3 in state_list:
                         if qc_passed:
                             break
                         else:
+                            # Automatically re-run judgement up to 3 times before asking user
+                            auto_rejudge_attempts = 0
+                            while not qc_passed and auto_rejudge_attempts < 3:
+                                auto_rejudge_attempts += 1
+                                print(Fore.CYAN + f"🔄 Auto re-judgement {auto_rejudge_attempts}/3 ..." + Style.RESET_ALL)
+                                if paths:
+                                    qc_passed, _, failed_slots = handle_qc_results(
+                                        paths=paths,
+                                        inform=inform,
+                                        test_phase="Warm QC",
+                                        allow_retry=False,
+                                        verbose=True
+                                    )
+                                if qc_passed:
+                                    print(Fore.GREEN + f"✓ Auto re-judgement {auto_rejudge_attempts}/3: PASS" + Style.RESET_ALL)
+                                else:
+                                    print(Fore.RED + f"✗ Auto re-judgement {auto_rejudge_attempts}/3: FAIL" + Style.RESET_ALL)
+                                    if auto_rejudge_attempts < 3:
+                                        print(Fore.CYAN + "  Waiting 60 seconds before next attempt..." + Style.RESET_ALL)
+                                        time.sleep(60)
+
+                            if qc_passed:
+                                break  # passed during auto re-judgement, exit outer loop
+
+                            # All 3 auto re-judgements failed — now ask the tester
                             failed_slot_names = ', '.join(
                                 [f"Slot{s} ({fid})" for s, fid in failed_slots]
                             )
                             print(Fore.RED + "\n" + "=" * 70)
-                            print(f"  ⚠️  WARM QC TEST FAILED - {failed_slot_names}")
+                            print(f"  ⚠️  WARM QC TEST FAILED (3 auto re-judgements exhausted) - {failed_slot_names}")
                             print("=" * 70 + Style.RESET_ALL)
 
                             if len(failed_slots) >= 2:
@@ -1734,6 +1760,7 @@ if 3 in state_list:
                                 print(Fore.YELLOW + "  Please disassemble the failed boards." + Style.RESET_ALL)
                                 print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
                                 print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Warm QC once more (~30 min)")
+                                print("  " + Fore.YELLOW + "'a'" + Style.RESET_ALL + " - Re-run judgement on existing results (no retest)")
                                 print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit and disassemble test structure")
 
                                 while True:
@@ -1745,6 +1772,29 @@ if 3 in state_list:
                                         else:
                                             print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
                                             continue
+                                    elif decision == 'a':
+                                        print(Fore.CYAN + "🔄 Re-running judgement on existing results..." + Style.RESET_ALL)
+                                        if paths:
+                                            qc_passed, _, failed_slots = handle_qc_results(
+                                                paths=paths,
+                                                inform=inform,
+                                                test_phase="Warm QC",
+                                                allow_retry=False,
+                                                verbose=True
+                                            )
+                                        if qc_passed:
+                                            print(Fore.GREEN + "✓ Judgement: PASS" + Style.RESET_ALL)
+                                            break  # break inner; outer will also break via qc_passed check
+                                        else:
+                                            failed_slot_names = ', '.join(
+                                                [f"Slot{s} ({fid})" for s, fid in failed_slots]
+                                            )
+                                            print(Fore.RED + f"✗ Judgement: FAIL - {failed_slot_names}. Please choose again." + Style.RESET_ALL)
+                                            print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
+                                            print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Warm QC once more (~30 min)")
+                                            print("  " + Fore.YELLOW + "'a'" + Style.RESET_ALL + " - Re-run judgement on existing results (no retest)")
+                                            print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit and disassemble test structure")
+                                            continue
                                     elif decision == 'e':
                                         if confirm_function("⚠️  Are you sure you want to exit and skip to disassembly?"):
                                             print(Fore.RED + "Exiting QC test. Will cleanup then proceed to disassembly..." + Style.RESET_ALL)
@@ -1754,10 +1804,10 @@ if 3 in state_list:
                                             print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
                                             continue
                                     else:
-                                        print(Fore.RED + "Invalid input. Please enter 'r' or 'e'" + Style.RESET_ALL)
+                                        print(Fore.RED + "Invalid input. Please enter 'r', 'a', or 'e'" + Style.RESET_ALL)
 
-                                # Break out of outer while loop if user chose 'e'
-                                if decision == 'e':
+                                # Break out of outer while loop if user chose 'e', or judgement passed
+                                if decision == 'e' or (decision == 'a' and qc_passed):
                                     break
 
                             else:
@@ -1765,18 +1815,42 @@ if 3 in state_list:
                                 print(Fore.YELLOW + "\n  One board failed Warm QC. Can continue to cold testing." + Style.RESET_ALL)
                                 print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
                                 print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Warm QC once more (~30 min)")
+                                print("  " + Fore.YELLOW + "'a'" + Style.RESET_ALL + " - Re-run judgement on existing results (no retest)")
                                 print("  " + Fore.GREEN + "'c'" + Style.RESET_ALL + " - Continue to cold testing")
                                 print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit and disassemble test structure")
 
                                 while True:
-                                    decision = 'c'
-                                    # decision = input(Fore.CYAN + ">> " + Style.RESET_ALL).lower()
+                                    decision = input(Fore.CYAN + ">> " + Style.RESET_ALL).lower()
                                     if decision == 'r':
                                         if confirm_function("⚠️  Retry will take ~30 minutes. Are you sure?"):
                                             print(Fore.CYAN + "🔄 Retrying Warm QC (this will take ~30 min)..." + Style.RESET_ALL)
                                             break  # Continue outer while loop for retry
                                         else:
                                             print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
+                                            continue
+                                    elif decision == 'a':
+                                        print(Fore.CYAN + "🔄 Re-running judgement on existing results..." + Style.RESET_ALL)
+                                        if paths:
+                                            qc_passed, _, failed_slots = handle_qc_results(
+                                                paths=paths,
+                                                inform=inform,
+                                                test_phase="Warm QC",
+                                                allow_retry=False,
+                                                verbose=True
+                                            )
+                                        if qc_passed:
+                                            print(Fore.GREEN + "✓ Judgement: PASS" + Style.RESET_ALL)
+                                            break  # break inner; outer will also break via qc_passed check
+                                        else:
+                                            failed_slot_names = ', '.join(
+                                                [f"Slot{s} ({fid})" for s, fid in failed_slots]
+                                            )
+                                            print(Fore.RED + f"✗ Judgement: FAIL - {failed_slot_names}. Please choose again." + Style.RESET_ALL)
+                                            print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
+                                            print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Warm QC once more (~30 min)")
+                                            print("  " + Fore.YELLOW + "'a'" + Style.RESET_ALL + " - Re-run judgement on existing results (no retest)")
+                                            print("  " + Fore.GREEN + "'c'" + Style.RESET_ALL + " - Continue to cold testing")
+                                            print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit and disassemble test structure")
                                             continue
                                     elif decision == 'c':
                                         print(Fore.YELLOW + "⚠️  Continuing to cold testing despite one board failure..." + Style.RESET_ALL)
@@ -1791,10 +1865,10 @@ if 3 in state_list:
                                             print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
                                             continue
                                     else:
-                                        print(Fore.RED + "Invalid input. Please enter 'r', 'c', or 'e'" + Style.RESET_ALL)
+                                        print(Fore.RED + "Invalid input. Please enter 'r', 'a', 'c', or 'e'" + Style.RESET_ALL)
 
-                                # Break out of outer while loop if user chose 'c' or 'e'
-                                if decision in ['c', 'e']:
+                                # Break out of outer while loop if user chose 'c', 'e', or judgement passed
+                                if decision in ['c', 'e'] or (decision == 'a' and qc_passed):
                                     break
 
                     ##### 27f. Close WIB Linux (always run after QC test for cleanup)

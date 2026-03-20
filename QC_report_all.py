@@ -90,7 +90,7 @@ def sync_report_to_network(data_dir):
 
 ag = argparse.ArgumentParser()
 ag.add_argument("folder", help="data folder", type=str)
-ag.add_argument("-t", "--tasks",help="a list of tasks to be analyzed", type=int, choices=range(1,16+1), nargs='+',default=range(1,16+1))
+ag.add_argument("-t", "--tasks",help="a list of tasks to be analyzed", type=int, choices=range(1,17+1), nargs='+',default=range(1,17+1))
 ag.add_argument("-n", "--fembs", help="a list of fembs to be analyzed", type=int, choices=range(0,4), nargs='+')
 args = ag.parse_args()
 
@@ -170,8 +170,8 @@ for tm in tasks:
     if tm==16:
        rp.PLL_scan_report("PLL_PAT")
 
-    # if tm==17:
-    #    rp.CHK_report()
+    if tm==17:
+       rp.REG_MON_report()
 
     # if tm==13:
     #    rp.CHK_report()

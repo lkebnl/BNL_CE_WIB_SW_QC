@@ -618,6 +618,120 @@ class QC_Runs:
 #            return
 #
 ##SE off/on, DIFF on  (14mV/fC, 200mV BL/ 900mV BL, 2us) = 3*2, External pulse
+
+# item #17 – Regulator Output Monitor
+# Sweeps 4 Vin × 3 ASIC configs = 12 voltage-rail snapshots via wib_vol_mon().
+# ASIC configs:
+#   A: FE SE off, ADC SE off, DIFF off          (baseline, no buffers)
+#   B: FE SE on,  ADC SE on,  DIFF off          (CMOS ref 0x62, ibuff 200 uA)
+#   C: FE SDD on, ADC SE off, DIFF on           (CMOS ref 0x62, ibuff 200 uA)
+# Register notes (ColdADC page 1):
+#   0x80 = 0x62  → SDC/CMOS input reference + buffer on
+#   0x9d = 0x27  → ibuff0 current = 200 uA
+#   0x9e = 0x27  → ibuff1 current = 200 uA
+    def femb_regulator_monitor(self):
+        print('QC Item Begin')
+        datadir = self.save_dir + "REG_MON/"
+        try:
+            os.makedirs(datadir)
+        except OSError:
+            print("Error to create folder %s !!! Continue to next test........" % datadir)
+            return
+
+        VIN_LIST = [2.6, 3.0, 3.5, 4.0]   # input voltages to regulator (V)
+
+        # name      – short tag used in filenames / dict keys
+        # label     – human-readable description
+        # fe_sts    – FE ASIC SE stimulation enable   (sts arg to set_fe_board)
+        # fe_sdd    – FE ASIC differential mode        (sdd arg to set_fe_board)
+        # adc_sha_cs  – ADC SHA mode: 0 = SE, 1 = DIFF  (adcs_paras[i][2])
+        # adc_ibuf_cs – ADC input buffer: 0=off, 1=SDC/CMOS  (adcs_paras[i][3])
+        # cmos_extra  – True: write reg 0x80=0x62 after femb_cfg (SE+CMOS buf path)
+        ASIC_CONFIGS = [
+            {
+                'name':       'FEseo_ADCseo_DIFFo',
+                'label':      'FE: SE off  | ADC: SE off, DIFF off',
+                'fe_sts':     0, 'fe_sdd':      0,
+                'adc_sha_cs': 0, 'adc_ibuf_cs': 0,
+                'cmos_extra': False,
+            },
+            {
+                'name':       'FEsen_ADCsen_DIFFo',
+                'label':      'FE: SE on   | ADC: SE on,  DIFF off',
+                'fe_sts':     1, 'fe_sdd':      0,
+                'adc_sha_cs': 0, 'adc_ibuf_cs': 1,
+                'cmos_extra': True,
+            },
+            {
+                'name':       'FEsddn_ADCseo_DIFFn',
+                'label':      'FE: SDD on  | ADC: SE off, DIFF on',
+                'fe_sts':     0, 'fe_sdd':      1,
+                'adc_sha_cs': 1, 'adc_ibuf_cs': 1,
+                'cmos_extra': False,
+            },
+        ]
+
+        self.chk.femb_power_com_on(self.fembs)
+        time.sleep(1)
+
+        data_dict = {
+            'fembs':        self.fembs,
+            'VIN_LIST':     VIN_LIST,
+            'cfg_labels':   {cfg['name']: cfg['label'] for cfg in ASIC_CONFIGS},
+            'measurements': {},   # key: "Vin{v}V_{cfg_name}" → [vold, fembs]
+        }
+
+        for vin in VIN_LIST:
+            print(f"Vin = {vin} V")
+            self.chk.fembs_vol_set(vfe=vin, vcd=vin, vadc=vin)
+            time.sleep(0.5)
+
+            for cfg in ASIC_CONFIGS:
+                print(f"  Config: {cfg['label']}")
+
+                # Reset ADC params then apply configuration
+                self.chk.adcs_paras = copy.deepcopy(self.chk.adcs_paras_init)
+                for i in range(8):
+                    self.chk.adcs_paras[i][2] = cfg['adc_sha_cs']
+                    self.chk.adcs_paras[i][3] = cfg['adc_ibuf_cs']
+                    self.chk.adcs_paras[i][8] = 1   # autocali on
+
+                self.chk.set_fe_board(sts=cfg['fe_sts'], snc=1, sg0=0, sg1=0,
+                                      st0=1, st1=1, swdac=0, dac=0x00,
+                                      sdd=cfg['fe_sdd'])
+
+                self.chk.femb_cd_rst()
+                for femb_id in self.fembs:
+                    self.chk.adc_flg[femb_id] = True
+                    self.chk.fe_flg[femb_id]  = True
+                    self.chk.femb_cfg(femb_id, False)
+
+                    # Config B (SE on): overwrite reg 0x80 → 0x62 for CMOS ref
+                    if cfg['cmos_extra']:
+                        for adc_no in range(8):
+                            c_id = self.chk.adcs_paras[adc_no][0]
+                            self.chk.femb_i2c_wrchk(femb_id, chip_addr=c_id,
+                                                     reg_page=1, reg_addr=0x80,
+                                                     wrdata=0x62)
+                            self.chk.femb_i2c_wrchk(femb_id, chip_addr=c_id,
+                                                     reg_page=1, reg_addr=0x9d,
+                                                     wrdata=0x27)
+                            self.chk.femb_i2c_wrchk(femb_id, chip_addr=c_id,
+                                                     reg_page=1, reg_addr=0x9e,
+                                                     wrdata=0x27)
+
+                vold = self.chk.wib_vol_mon(femb_ids=self.fembs, sps=10)
+                label = f"Vin{vin}V_{cfg['name']}"
+                data_dict['measurements'][label] = [vold, self.fembs]
+
+        # Restore nominal voltage
+        self.chk.fembs_vol_set(vfe=3.0, vcd=3.0, vadc=3.5)
+
+        fp = datadir + "QC_regulator_monitor_t17.bin"
+        with open(fp, 'wb') as fn:
+            pickle.dump(data_dict, fn)
+        print('QC Item Done')
+
     def debug_02(self):
         print('QC Item Begin')
         datadir = self.save_dir + "CHK/"

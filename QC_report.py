@@ -2027,6 +2027,48 @@ class QC_reports:
         for ifemb in self.fembs:
             femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
 
+    #   17  Regulator Output Monitor
+    # ================================================================================================
+    # Loads the 12 (4 Vin × 3 config) voltage-rail snapshots saved by QC_runs.femb_regulator_monitor()
+    # and runs monitor_power_rail_analysis() on each one.
+    # Populates:
+    #   log.report_log1701[femb_id][label] = {rail: voltage_mV_str, ...}
+    #   log.check_log1701 [femb_id]        = {'Result': bool, 'Issue List': [...]}
+    def REG_MON_report(self):
+        log.test_label.append(17)
+        self.CreateDIR("REG_MON")
+        datadir = self.datadir + "REG_MON/"
+
+        f_data = datadir + "QC_regulator_monitor_t17.bin"
+        with open(f_data, 'rb') as fn:
+            data_dict = pickle.load(fn)
+
+        measurements = data_dict['measurements']   # {label: [vold, fembs]}
+        cfg_labels   = data_dict.get('cfg_labels', {})
+
+        # Initialise per-FEMB check entries
+        for ifemb in self.fembs:
+            femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
+            log.check_log1701[femb_id]['Result']     = True
+            log.check_log1701[femb_id]['Issue List'] = []
+
+        for label, monvols in measurements.items():
+            human_label = cfg_labels.get(label.split('_', 1)[-1] if '_' in label else label, label)
+            a_func.monitor_power_rail_analysis(
+                human_label, self.fembs, monvols, self.fembsID,
+                label=label, NewWIB=self.NewWIB
+            )
+            vol_report = dict(log.tmp_log)
+            chk_report = dict(log.check_log)
+
+            for ifemb in self.fembs:
+                femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
+                log.report_log1701[femb_id][label] = dict(vol_report.get(femb_id, {}))
+                if not chk_report.get(femb_id, {}).get('Result', True):
+                    log.check_log1701[femb_id]['Result'] = False
+                    log.check_log1701[femb_id]['Issue List'].extend(
+                        chk_report[femb_id].get('Issue List', [])
+                    )
 
 if __name__ == '__main__':
 

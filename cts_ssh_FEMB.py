@@ -344,6 +344,7 @@ def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None, email_info=No
     tms_items[14] = "\033[96m Item_14 : External Pulse Calibration 200mV baseline [less than 50 second]\033[0m"
     tms_items[15] = "\033[96m Item_15 : ColdADC_sync_pat_report [less than 50 second]\033[0m"
     tms_items[16] = "\033[96m Item_16 : PLL_scan_report [less than 60 second]\033[0m"
+    tms_items[17] = "\033[96m Item_17 : Regulator Output Monitor [less than 300 second]\033[0m"
     logs['tms_items'] = tms_items
 
     # ==============================

@@ -332,7 +332,7 @@ def real_time_monitor():
                 if '_t6' in file_path[-9:]:
                     time.sleep(c*30)  # the time is used to copy the whole .bin file
                 else:
-                    time.sleep(c*7)  # the time is used to copy the whole .bin file
+                    time.sleep(c*12)  # the time is used to copy the whole .bin file
                 slot = n
                 item = t_num
                 command = ["python3 QC_report_all.py" + " " + path  + " " +  "-n " + slot + " -t " + item]

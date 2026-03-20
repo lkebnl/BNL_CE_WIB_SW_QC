@@ -91,10 +91,12 @@ for tm in tasks:
     if tm == 16:
         t0=time.time()
         qc.femb_test_pattern_pll()
-        qc.pwr_fembs('off')
 
-    if tm == 17: #debugging use only
-        qc.debug_02()
+
+    if tm == 17:
+        t0 = time.time()
+        qc.femb_regulator_monitor()
+        qc.pwr_fembs('off')
 
 # qc.pwr_fembs('off')
 print(tt)

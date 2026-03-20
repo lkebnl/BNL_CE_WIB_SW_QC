@@ -1,4 +1,5 @@
 import os
+import re
 import pickle
 from colorama import Fore, Style, init
 import QC_components.qc_log as log
@@ -84,6 +85,7 @@ def section_report(datareport, fembs, fembNo, fembsName):
         check_status14 = True
         check_status15 = True
         check_status16 = True
+        check_status17 = True
         Status = 'P'
         if 1 in log.test_label:
             dict_list01 = [log.check_log01_11[femb_id], log.check_log01_12[femb_id], log.check_log01_13[femb_id], log.check_log01_21[femb_id], log.check_log01_22[femb_id], log.check_log01_23[femb_id], log.check_log01_31[femb_id], log.check_log01_32[femb_id], log.check_log01_33[femb_id]]
@@ -253,6 +255,12 @@ def section_report(datareport, fembs, fembNo, fembsName):
                     Status = 'F'
             check_list.append(check_status16)
 
+        if 17 in log.test_label:
+            if log.check_log1701[femb_id].get('Result', True) == False:
+                check_status17 = False
+                Status = 'F'
+            check_list.append(check_status17)
+
         all_true = all(value for value in check_list)
         if all_true:
             summary = '<span style="color: green;">' + " FEMB # {}\t      PASS\t    ALL Quality Control".format(fembsName['femb%d' % ifemb]) + '</span>'  + '\n'
@@ -396,6 +404,12 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 else:
                     Item16 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: red;">' + 'Item_16 PLL_scan_report' + '&nbsp;&nbsp;&nbsp;&nbsp; < Fail >' + '</span>'
                 file.write('[Chapter_16](#item16)' + Item16 + '\n\n')
+            if 17 in log.test_label:
+                if check_status17:
+                    Item17 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: green;">' + 'Item_17 Regulator Output Monitor' + '&nbsp;&nbsp;&nbsp;&nbsp; < Pass >' + '</span>'
+                else:
+                    Item17 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: red;">' + 'Item_17 Regulator Output Monitor' + '&nbsp;&nbsp;&nbsp;&nbsp; < Fail >' + '</span>'
+                file.write('[Chapter_17](#item17)' + Item17 + '\n\n')
             file.write("------\n")
 
             if 1 in log.test_label:
@@ -984,6 +998,80 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 info = dict_to_markdown_table(log.report_log1601[femb_id])
                 file.write(info + '\n')
                 file.write("[PDF](./{}/report.pdf)".format(log.item16) + "\n")
+
+# 17        print <Regulator Output Monitor>
+            if 17 in log.test_label:
+                if check_status17:
+                    file.write('### ' + '</span>' + '<span id="item17"> Chapter_17 </span>'
+                                + '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: green;">'
+                                + 'ITEM_17_REGULATOR_OUTPUT_MONITOR    < Pass >' + '</span>' + '\n')
+                else:
+                    file.write('### ' + '</span>' + '<span id="item17"> Chapter_17 </span>'
+                                + '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: red;">'
+                                + 'ITEM_17_REGULATOR_OUTPUT_MONITOR    < Fail >' + '</span>' + '\n')
+                file.write("------\n")
+                file.write('Regulator output voltages at 4 Vin × 3 ASIC configurations (12 sets)\n\n')
+                file.write('Configs: FE SE off / ADC SE off (baseline) · FE SE on / ADC SE on (CMOS ref) · FE SDD on / DIFF on (CMOS ref)\n\n')
+
+                # Build a compact table: rows = power-rail names, columns = 12 Vin+Config combos
+                # Collect all labels and rail names from the first FEMB
+                mon_data = log.report_log1701.get(femb_id, {})
+                if mon_data:
+                    labels = list(mon_data.keys())
+                    # Shorten column headers for readability
+                    short_labels = [lbl.replace('FEseo_ADCseo_DIFFo', 'SE_off')
+                                       .replace('FEsen_ADCsen_DIFFo', 'SE_on')
+                                       .replace('FEsddn_ADCseo_DIFFn', 'DIFF_on')
+                                    for lbl in labels]
+                    # Collect rail names from first column
+                    rail_names = list(mon_data[labels[0]].keys()) if labels else []
+
+                    # Write markdown table
+                    header = '| Power Rail | ' + ' | '.join(short_labels) + ' |\n'
+                    sep    = '| --- | ' + ' | '.join(['---'] * len(labels)) + ' |\n'
+                    file.write(header)
+                    file.write(sep)
+                    for rail in rail_names:
+                        row = '| {} | '.format(rail)
+                        row += ' | '.join(
+                            str(mon_data[lbl].get(rail, '--')) for lbl in labels
+                        )
+                        row += ' |\n'
+                        file.write(row)
+                    file.write('\n')
+
+                    # --- Statistics table: max / min / mean / std per rail ---
+                    file.write('#### Statistics across all 12 sets (4 Vin × 3 configs)\n\n')
+                    file.write('| Power Rail | Max (mV) | Min (mV) | Mean (mV) | Std (mV) |\n')
+                    file.write('| --- | --- | --- | --- | --- |\n')
+                    for rail in rail_names:
+                        raw_vals = []
+                        for lbl in labels:
+                            cell = str(mon_data[lbl].get(rail, '--'))
+                            plain = re.sub(r'<[^>]+>', '', cell).strip()
+                            try:
+                                raw_vals.append(float(plain))
+                            except (ValueError, TypeError):
+                                pass
+                        if raw_vals:
+                            vmax  = round(max(raw_vals), 1)
+                            vmin  = round(min(raw_vals), 1)
+                            vmean = round(sum(raw_vals) / len(raw_vals), 1)
+                            vstd  = round((sum((v - vmean) ** 2 for v in raw_vals) / len(raw_vals)) ** 0.5, 1)
+                            stat_row = f'| {rail} | {vmax} | {vmin} | {vmean} | {vstd} |\n'
+                        else:
+                            stat_row = f'| {rail} | -- | -- | -- | -- |\n'
+                        file.write(stat_row)
+                    file.write('\n')
+
+                # Issue list (if any)
+                issue_list = log.check_log1701[femb_id].get('Issue List', [])
+                if issue_list:
+                    file.write('<details>\n\n')
+                    file.write('**Issue list:**\n\n')
+                    for issue in issue_list:
+                        file.write(f'- {issue}\n')
+                    file.write('\n</details>\n\n')
     return fpmd
 
 
@@ -1013,14 +1101,14 @@ def final_report(datareport, fembs, fembNo, fembsName):
 ###======================== Whole judgement =============================
 #   item 01 Power Consumption
         check_list = []
-        check_status = [None for _ in range(1, 17)]
-        item_file = [None for _ in range(1, 17)]
+        check_status = [None for _ in range(1, 18)]
+        item_file = [None for _ in range(1, 18)]
         print(check_status)
 
         for root, dirs, files in os.walk(datareport[ifemb]):
             for file in files:
                 if file.endswith('.md'):
-                    for i in range(1,17,1):
+                    for i in range(1,18,1):
                         if 't{}_F'.format(i) in file:
                             check_status[i - 1] = False
                             item_file[i - 1] = file
@@ -1237,6 +1325,15 @@ def final_report(datareport, fembs, fembNo, fembsName):
             else:
                 Item16 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: gray;">' + 'Item_16 PLL_scan_report' + '&nbsp;&nbsp;&nbsp;&nbsp; < No Test >' + '</span>'
             file.write(Item16 + '\n\n')
+
+            if check_status[17-1] is True:
+                Item17 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: green;">' + 'Item_17 Regulator Output Monitor' + '&nbsp;&nbsp;&nbsp;&nbsp; [Pass](./{})'.format(item_file[17-1]) + '</span>\n\n'
+                Item17 += "&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; All power rails within spec across 4 Vin × 3 ASIC configurations"
+            elif check_status[17 - 1] is False:
+                Item17 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: red;">' + 'Item_17 Regulator Output Monitor' + '&nbsp;&nbsp;&nbsp;&nbsp; < Fail > [Detail](./{})'.format(item_file[17-1]) + '</span>'
+            else:
+                Item17 = '&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: gray;">' + 'Item_17 Regulator Output Monitor' + '&nbsp;&nbsp;&nbsp;&nbsp; < No Test >' + '</span>'
+            file.write(Item17 + '\n\n')
 
             file.write("------\n")
 

@@ -369,6 +369,13 @@ item16 = "PLL_PAT"
 check_log1601 = defaultdict(dict)
 report_log1601 = defaultdict(dict)
 check_log16csv = defaultdict(dict)
+
+# 17 Regulator Output Monitor
+# report_log1701[femb_id][label] = {rail: voltage_mV_str, ...}  (per Vin/config combo)
+# check_log1701[femb_id] = {'Result': bool, 'Issue List': [...]}
+item17 = "REG_MON"
+report_log1701 = defaultdict(dict)
+check_log1701  = defaultdict(dict)
 # 06 calibration
 channel0_pulse = defaultdict(dict)
 
