@@ -1144,6 +1144,7 @@ if is_2nd_ce_box:
     print("-" * 70 + Style.RESET_ALL)
 
     chamber_empty = False
+    confirm_function("Please confirm the CTS is power on")
     while True:
         print(Fore.YELLOW + "\n⚠️  SAFETY CHECK:" + Style.RESET_ALL)
         print("Please confirm the first CE structure is removed and disassembly, the CTS chamber is empty.")
@@ -2263,61 +2264,82 @@ if 4 in state_list and not goto_disassembly:
 
                 break
             else:
-                # # Cold QC Test failed
-                # failed_slot = get_failed_slot_from_path(lqreport_path)
-                # print(Fore.RED + "\n" + "=" * 70)
-                # print(f"  ⚠️  COLD QC TEST FAILED - {failed_slot}")
-                # print("=" * 70 + Style.RESET_ALL)
+                # Automatically re-run judgement up to 3 times before asking user
+                auto_rejudge_attempts = 0
+                while not all_passed and auto_rejudge_attempts < 3:
+                    auto_rejudge_attempts += 1
+                    print(Fore.CYAN + f"🔄 Auto re-judgement {auto_rejudge_attempts}/3 ..." + Style.RESET_ALL)
+                    if paths:
+                        all_passed, should_retry, failed_slots = handle_qc_results(
+                            paths=paths,
+                            inform=infoln,
+                            test_phase="Cold QC Test",
+                            allow_retry=False,
+                            verbose=True
+                        )
+                    if all_passed:
+                        print(Fore.GREEN + f"✓ Auto re-judgement {auto_rejudge_attempts}/3: PASS" + Style.RESET_ALL)
+                    else:
+                        print(Fore.RED + f"✗ Auto re-judgement {auto_rejudge_attempts}/3: FAIL" + Style.RESET_ALL)
+                        if auto_rejudge_attempts < 3:
+                            print(Fore.CYAN + "  Waiting 60 seconds before next attempt..." + Style.RESET_ALL)
+                            time.sleep(60)
 
-                # Print fault file paths
-                # print(Fore.YELLOW + "\n" + "-" * 70)
-                # print("  📋 Checking for fault files in Cold QC results...")
-                # print("-" * 70 + Style.RESET_ALL)
-                # check_fault_files(
-                #     paths=[lqdata_path, lqreport_path],
-                #     show_p_files=False,
-                #     inform=infoln,
-                #     time_limit_hours=None
-                # )
+                if all_passed:
+                    break  # passed during auto re-judgement, exit outer loop
 
-                # Send failure notification
-                # print(Fore.YELLOW + "\n📧 Sending failure notification email..." + Style.RESET_ALL)
-                # send_email.send_email(
-                #     sender, password, receiver,
-                #     f"Cold QC Test Failed - {pre_info.get('test_site', 'Unknown')}",
-                #     "Cold QC Test failed. Awaiting operator decision."
-                # )
+                # All 3 auto re-judgements failed — now ask the tester
+                failed_slot_names = ', '.join(
+                    [f"Slot{s} ({fid})" for s, fid in failed_slots]
+                )
+                print(Fore.RED + "\n" + "=" * 70)
+                print(f"  ⚠️  COLD QC TEST FAILED (3 auto re-judgements exhausted) - {failed_slot_names}")
+                print("=" * 70 + Style.RESET_ALL)
 
-                # User decision with retry option
-                # print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
-                # print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Cold QC once more (~30 min)")
-                # print("  " + Fore.GREEN + "'c'" + Style.RESET_ALL + " - Continue to warm-up anyway (not recommended)")
-                # print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit Cold QC, proceed to warm-up then disassembly")
+                print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
+                print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Cold QC once more (~90 min)")
+                print("  " + Fore.YELLOW + "'a'" + Style.RESET_ALL + " - Re-run judgement on existing results (no retest)")
+                print("  " + Fore.GREEN + "'c'" + Style.RESET_ALL + " - Continue to warm-up despite failure")
+                print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit Cold QC, proceed to warm-up then disassembly")
 
                 while True:
-                    decision = 'c' #input(Fore.CYAN + ">> " + Style.RESET_ALL).lower()
+                    # decision = input(Fore.CYAN + ">> " + Style.RESET_ALL).lower()
+                    decision = 'c'
                     if decision == 'r':
-                        # Confirm before retrying (takes ~30 min)
-                        if confirm_function("⚠️  Retry will take ~30 minutes. Are you sure?"):
-                            print(Fore.CYAN + "🔄 Retrying Cold QC (this will take ~30 min)..." + Style.RESET_ALL)
+                        if confirm_function("⚠️  Retry will take ~90 minutes. Are you sure?"):
+                            print(Fore.CYAN + "🔄 Retrying Cold QC (this will take ~90 min)..." + Style.RESET_ALL)
                             break  # Continue outer while loop for retry
                         else:
                             print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
                             continue
+                    elif decision == 'a':
+                        print(Fore.CYAN + "🔄 Re-running judgement on existing results..." + Style.RESET_ALL)
+                        if paths:
+                            all_passed, should_retry, failed_slots = handle_qc_results(
+                                paths=paths,
+                                inform=infoln,
+                                test_phase="Cold QC Test",
+                                allow_retry=False,
+                                verbose=True
+                            )
+                        if all_passed:
+                            print(Fore.GREEN + "✓ Judgement: PASS" + Style.RESET_ALL)
+                            break  # break inner; outer will also break via all_passed check
+                        else:
+                            failed_slot_names = ', '.join(
+                                [f"Slot{s} ({fid})" for s, fid in failed_slots]
+                            )
+                            print(Fore.RED + f"✗ Judgement: FAIL - {failed_slot_names}. Please choose again." + Style.RESET_ALL)
+                            print("\n" + Fore.YELLOW + "⚠️  What would you like to do?" + Style.RESET_ALL)
+                            print("  " + Fore.CYAN + "'r'" + Style.RESET_ALL + " - Retry Cold QC once more (~90 min)")
+                            print("  " + Fore.YELLOW + "'a'" + Style.RESET_ALL + " - Re-run judgement on existing results (no retest)")
+                            print("  " + Fore.GREEN + "'c'" + Style.RESET_ALL + " - Continue to warm-up despite failure")
+                            print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit Cold QC, proceed to warm-up then disassembly")
+                            continue
                     elif decision == 'c':
-                        print('continue the QC process')
+                        print(Fore.YELLOW + "⚠️  Continuing to warm-up despite Cold QC failure..." + Style.RESET_ALL)
                         break
-                        # Confirm before continuing despite failure
-                        # if confirm_function("⚠️  Are you sure you want to continue to warm-up despite Cold QC failure?"):
-                        # if True:
-                        #     print(Fore.YELLOW + "⚠️  Continuing to warm-up despite Cold QC failure..." + Style.RESET_ALL)
-                        #     # Exit retry loop and continue to warm-up
-                        #     break
-                        # else:
-                        #     print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
-                        #     continue
                     elif decision == 'e':
-                        # Confirm before exiting to warm-up + disassembly
                         if confirm_function("⚠️  Are you sure you want to exit Cold QC and proceed to warm-up then disassembly?"):
                             print(Fore.RED + "Exiting Cold QC. Will proceed to warm-up then disassembly..." + Style.RESET_ALL)
                             goto_disassembly = True
@@ -2326,10 +2348,10 @@ if 4 in state_list and not goto_disassembly:
                             print(Fore.YELLOW + "Cancelled. Please choose another option." + Style.RESET_ALL)
                             continue
                     else:
-                        print(Fore.RED + "Invalid input. Please enter 'r', 'c', or 'e'" + Style.RESET_ALL)
+                        print(Fore.RED + "Invalid input. Please enter 'r', 'a', 'c', or 'e'" + Style.RESET_ALL)
 
-                # Break out of outer while loop if user chose 'c' or 'e'
-                if decision in ['c', 'e']:
+                # Break out of outer while loop if user chose 'c', 'e', or judgement passed
+                if decision in ['c', 'e'] or (decision == 'a' and all_passed):
                     break
 
         # else:
@@ -2926,7 +2948,7 @@ except Exception as e:
 
 print(Fore.CYAN + f"Network upload path: {network_upload_path}" + Style.RESET_ALL)
 print(Fore.CYAN + f"FEMB IDs: {', '.join(femb_ids) if femb_ids else 'None'}" + Style.RESET_ALL)
-
+confirm_function("Please confirm the CTS is power off")
 ### 55. Close CTS and Exit
 while True:
     print("Enter 'Exit' to exit ...")

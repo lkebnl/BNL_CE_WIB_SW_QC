@@ -100,7 +100,7 @@ class cryobox:
         self.ser = None
         self.manual_flg = False
 
-    def cryo_create(self):
+    def cryo_create(self, email_info=None):
         while True:
             try:
                 self.ser = serial.Serial(self.portno,  115200, timeout=5, write_timeout=5, parity=serial.PARITY_NONE)
@@ -112,7 +112,38 @@ class cryobox:
                 if self.cts_init_setup():
                     print ("COM port for CTS is located")
                 else:
-                    yorn = input ("Can't build communication with CTS. Take over manually (y/n)")
+                    # Auto-retry raw serial connection 5 times (10 s apart)
+                    reconnected = False
+                    for attempt in range(1, 6):
+                        print(Fore.YELLOW + f"  CTS no connection — retry {attempt}/5 in 10 s..." + Style.RESET_ALL)
+                        time.sleep(10)
+                        try:
+                            self.ser = serial.Serial(self.portno, 115200, timeout=5, write_timeout=5, parity=serial.PARITY_NONE)
+                            print(Fore.GREEN + f"  CTS reconnected on attempt {attempt}/5." + Style.RESET_ALL)
+                            time.sleep(0.5)
+                            reconnected = True
+                            break
+                        except serial.SerialException:
+                            print(Fore.RED + f"  Attempt {attempt}/5 failed." + Style.RESET_ALL)
+                    if reconnected:
+                        return True
+
+                    # All 5 attempts failed — send email then ask tester
+                    print(Fore.RED + "\nCan't build communication with CTS after 5 attempts." + Style.RESET_ALL)
+                    if EMAIL_AVAILABLE and email_info:
+                        try:
+                            send_email.send_email(
+                                email_info['sender'],
+                                email_info['password'],
+                                email_info['receiver'],
+                                f"CTS Connection FAILED - {email_info.get('test_site', 'CTS')}",
+                                f"CTS Cryogenic box connection failed after 5 auto-retry attempts.\n"
+                                f"Port: {self.portno}\nManual intervention required."
+                            )
+                            print(Fore.YELLOW + "📧 Failure notification email sent." + Style.RESET_ALL)
+                        except Exception as e:
+                            print(Fore.YELLOW + f"⚠️  Failed to send email: {e}" + Style.RESET_ALL)
+                    yorn = input("Can't build communication with CTS. Take over manually? (y/n): ")
                     if 'Y' in yorn or 'y' in yorn:
                         self.manual_flg = True
                         return False
