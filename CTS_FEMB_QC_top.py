@@ -335,35 +335,39 @@ def collect_assembly_data(slot_name):
         print(Fore.CYAN + "         Step: Scan HWDB QR code on foam box" + Style.RESET_ALL)
         hwdb_qr = input(Fore.YELLOW + '         Scan or type HWDB QR code: ' + Style.RESET_ALL).strip()
 
-        if hwdb_qr:
+        if not hwdb_qr:
+            print_status('error', "         HWDB QR code cannot be empty. Please try again.")
+        elif 'https://' not in hwdb_qr:
+            print_status('error', "         Invalid HWDB QR: must contain 'https://'. Please scan again.")
+        else:
             print_status('success', f"         HWDB QR recorded: {hwdb_qr}")
             break
-        else:
-            print_status('error', "         HWDB QR code cannot be empty. Please try again.")
 
     # Step 2: Scan/Type CE box QR code
     while True:
         print(Fore.CYAN + "         Step: Scan CE box QR code" + Style.RESET_ALL)
         ce_box_sn = input(Fore.YELLOW + '         Scan CE box QR code or type SN: ' + Style.RESET_ALL).strip()
 
-        if ce_box_sn:
+        if not ce_box_sn:
+            print_status('error', "         CE box SN cannot be empty. Please try again.")
+        elif 'VD-' not in ce_box_sn:
+            print_status('error', "         Invalid CE box SN: must contain 'VD-'. Please scan again.")
+        else:
             print_status('success', f"         CE box SN recorded: {ce_box_sn}")
             break
-        else:
-            print_status('error', "         CE box SN cannot be empty. Please try again.")
 
     # Step 3: Type last 4 digits on CE box cover with validation
     while True:
         print(Fore.CYAN + "         Step: Type last 4 digits on CE box cover" + Style.RESET_ALL)
         cover_last4 = input(Fore.YELLOW + '         Type last 4 digits: ' + Style.RESET_ALL).strip()
 
-        if cover_last4:
+        if not cover_last4:
+            print_status('error', "         Cover SN cannot be empty. Please try again.")
+        elif not (len(cover_last4) == 4 and cover_last4.isdigit()):
+            print_status('error', "         Invalid Cover SN: must be exactly 4 digits. Please try again.")
+        else:
             print_status('success', f"         Cover SN recorded: {cover_last4}")
             break
-        else:
-            print_status('error', "         No input. Cover SN Default as '0000'.")
-            cover_last4 = '0000'
-            continue
     print_separator()
     return {
         'hwdb_qr': hwdb_qr,
@@ -463,8 +467,8 @@ time.sleep(1)
 # print(f"✓ check CTS Monitor Launched" + Fore.GREEN + "(A terminal for real time analysis is launched, please minimize it.)" + Style.RESET_ALL)
 
 update_email_receiver_in_config(receiver)
-
-shifter_log_url = "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?usp=sharing"
+confirm_function("Please confirm the CTS Monitor is Open")
+shifter_log_url = "https://docs.google.com/document/d/1blOAo82yAw1hYqBfaX0Y-f9ryWvKk4AIe2pfF1pgADU/edit?tab=t.awmaren3g49n#heading=h.kefll287v4wn"
 print(f"Please open shifter log link in Chrome: {shifter_log_url}")
 try:
     chrome_path = webbrowser.get('google-chrome')
@@ -813,19 +817,19 @@ if 1 in state_list:
                 print(Fore.CYAN + "         [1/2] Scan the FEMB QR code (1st scan)" + Style.RESET_ALL)
                 femb_id_00 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
-                ##### Validate: Must contain IO-1826-1 (HD) or IO-1865-1 (VD)
-                if ("-1826-1" in femb_id_00) or ("-1865-1" in femb_id_00):
+                ##### Validate: Must contain 'BNL', 'FEMB', and 'IO-1865-1L'
+                if ('BNL' in femb_id_00) and ('FEMB' in femb_id_00) and ('IO-1865-1L' in femb_id_00):
                     break
                 else:
-                    print_status('error', "         No valid FEMB ID detected. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
             while True:
                 print(Fore.CYAN + "         [2/2] Scan the FEMB QR code (2nd scan)" + Style.RESET_ALL)
                 femb_id_01 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
-                if ("-1826-1" in femb_id_01) or ("-1865-1" in femb_id_01):
+                if ('BNL' in femb_id_01) and ('FEMB' in femb_id_01) and ('IO-1865-1L' in femb_id_01):
                     break
                 else:
-                    print_status('error', "         No valid FEMB ID detected. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
 
             ##### Match check - If scans match, proceed; else require 3rd scan
             if femb_id_01 == femb_id_00:
@@ -838,18 +842,18 @@ if 1 in state_list:
                     while True:
                         print("         Scan bottom FEMB QR code " + Fore.CYAN + "(3rd attempt - try 1):" + Style.RESET_ALL)
                         femb_id_2 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ("-1826-1" in femb_id_2) or ("-1865-1" in femb_id_2):
+                        if ('BNL' in femb_id_2) and ('FEMB' in femb_id_2) and ('IO-1865-1L' in femb_id_2):
                             break
                         else:
-                            print(Fore.RED + "         ✗ No valid FEMB ID detected. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
 
                     while True:
                         print("         Scan bottom FEMB QR code " + Fore.CYAN + "(3rd attempt - try 2):" + Style.RESET_ALL)
                         femb_id_3 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ("-1826-1" in femb_id_3) or ("-1865-1" in femb_id_3):
+                        if ('BNL' in femb_id_3) and ('FEMB' in femb_id_3) and ('IO-1865-1L' in femb_id_3):
                             break
                         else:
-                            print(Fore.RED + "         ✗ No valid FEMB ID detected. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
 
                     if femb_id_2 == femb_id_3:
                         print(Fore.GREEN + "         ✓ QR codes match. Proceeding..." + Style.RESET_ALL)
@@ -970,21 +974,21 @@ if 1 in state_list:
                 print(Fore.YELLOW + "         Step 1.21: " + Style.RESET_ALL + "Scan the FEMB QR code " + Fore.CYAN + "(1st scan)" + Style.RESET_ALL)
                 femb_id_10 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
-                ##### Validate: Must contain IO-1826-1 (HD) or IO-1865-1 (VD)
-                if ("-1826-1" in femb_id_10) or ("-1865-1" in femb_id_10):
+                ##### Validate: Must contain 'BNL', 'FEMB', and 'IO-1865-1L'
+                if ('BNL' in femb_id_10) and ('FEMB' in femb_id_10) and ('IO-1865-1L' in femb_id_10):
                     break
                 else:
-                    print_status('error', "         No valid FEMB ID detected. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
 
             ##### Second scan
             while True:
                 print(Fore.YELLOW + "         Step 1.22: " + Style.RESET_ALL + "Scan the FEMB QR code " + Fore.CYAN + "(2nd scan)" + Style.RESET_ALL)
                 femb_id_11 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
-                if ("-1826-1" in femb_id_11) or ("-1865-1" in femb_id_11):
+                if ('BNL' in femb_id_11) and ('FEMB' in femb_id_11) and ('IO-1865-1L' in femb_id_11):
                     break
                 else:
-                    print_status('error', "         No valid FEMB ID detected. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
 
             ##### Match check - If scans match, proceed; else require 3rd scan
             if femb_id_11 == femb_id_10:
@@ -998,18 +1002,18 @@ if 1 in state_list:
                     while True:
                         print("         Scan top FEMB QR code " + Fore.CYAN + "(3rd attempt - try 1):" + Style.RESET_ALL)
                         femb_id_2 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ("-1826-1" in femb_id_2) or ("-1865-1" in femb_id_2):
+                        if ('BNL' in femb_id_2) and ('FEMB' in femb_id_2) and ('IO-1865-1L' in femb_id_2):
                             break
                         else:
-                            print(Fore.RED + "         ✗ No valid FEMB ID detected. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
 
                     while True:
                         print("         Scan top FEMB QR code " + Fore.CYAN + "(3rd attempt - try 2):" + Style.RESET_ALL)
                         femb_id_3 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ("-1826-1" in femb_id_3) or ("-1865-1" in femb_id_3):
+                        if ('BNL' in femb_id_3) and ('FEMB' in femb_id_3) and ('IO-1865-1L' in femb_id_3):
                             break
                         else:
-                            print(Fore.RED + "         ✗ No valid FEMB ID detected. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
 
                     if femb_id_2 == femb_id_3:
                         print(Fore.GREEN + "         ✓ QR codes match. Proceeding..." + Style.RESET_ALL)
@@ -2918,11 +2922,11 @@ try:
                 key, value = row
                 upload_config[key.strip()] = value.strip()
 
-    network_upload_path = upload_config.get('Network_Upload_Path', '/data/rtss/femb')
+    network_upload_path = upload_config.get('Network_Upload_Path', '/data/femb')
     qc_root = upload_config.get('QC_data_root_folder', '/mnt/data')
 except Exception as e:
     print_status('warning', f"Could not load upload configuration: {e}")
-    network_upload_path = '/data/rtss/femb'
+    network_upload_path = '/data/femb'
     qc_root = '/mnt/data'
 
 femb_ids = []
