@@ -1732,12 +1732,16 @@ class WIB_CFGS(LLC, FE_ASIC_REG_MAPPING):
                 cd_addr = 0x3
 
         while True:
+            self.wib_fw()
+            time.sleep(1)
+            self.wib_femb_link_en([femb_id])
             self.femb_cd_rst()
             time.sleep(0.1)
-            efusev18 = self.cdpeek(femb_id, cd_addr, 0, 0x18)
-            efusev19 = self.cdpeek(femb_id, cd_addr, 0, 0x19)
-            efusev1A = self.cdpeek(femb_id, cd_addr, 0, 0x1A)
-            efusev1B = self.cdpeek(femb_id, cd_addr, 0, 0x1B)
+            self.cdpoke(femb_id, cd_addr, 0, 0x1f, 1)
+            efusev18 = self.femb_i2c_rd(femb_id, cd_addr, 0, 0x18)
+            efusev19 = self.femb_i2c_rd(femb_id, cd_addr, 0, 0x19)
+            efusev1A = self.femb_i2c_rd(femb_id, cd_addr, 0, 0x1A)
+            efusev1B = self.femb_i2c_rd(femb_id, cd_addr, 0, 0x1B)
             efusev = efusev18 + (efusev19<<8) + (efusev1A<<16) +(efusev1B<<24)
             if (efuseid&efusev) == efuseid :
                 print ("Efuse readback value is %d"%efusev)
