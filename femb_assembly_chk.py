@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 LAr_Dalay = 3.5
 
 t1 = time.time()
-####### Input FEMB slots #######
 if len(sys.argv) < 2:
     print('Please specify at least one FEMB # to test')
     print('e.g. python3 quick_checkout.py 0')
@@ -49,9 +48,6 @@ if 'OW' in sys.argv:
 else:
     NewWIB = True
 
-###########################################
-#      PART 01 Input test information     #
-###########################################
 env = ""
 if save:
     logs={}
@@ -97,14 +93,9 @@ log.report_log01["ITEM"] = "01 Initial Information"
 log.report_log01["Detail"] = logs
 
 
-
-###########################################
-#      PART 02 Initial Power Measurement  #
-###########################################
 chk = WIB_CFGS()
 chk.wib_fw()
 
-####### Power off FEMBs #######
 print("Power off FEMBs to initial the test")
 chk.femb_powering([])
 
@@ -112,7 +103,7 @@ RP = 1
 if RP == 1:
     chk.fembs_vol_set(vfe=3.0, vcd=3.0, vadc=3.5)
 
-chk.fembs_vol_set(vfe = 3.0, vcd = 3.0, vadc = 3.5)   #   this parameter can not be used in LN2
+chk.fembs_vol_set(vfe = 3.0, vcd = 3.0, vadc = 3.5)
 print("Check FEMB currents")
 fembs_remove = []
 
@@ -124,11 +115,10 @@ time.sleep(0.5)
 chk.femb_cd_rst()
 cfg_paras_rec = []
 for i in range(8):
-    chk.adcs_paras[i][8]=1   # enable  auto
+    chk.adcs_paras[i][8]=1
 for femb_id in fembs:
     chk.femb_cfg(femb_id, False )
 
-#####   2.1  initial current measure #####
 log.report_log02["ITEM"] = "2.1 Initial Current Measurement"
 pwr_meas1 = chk.get_sensors()
 result = False
@@ -194,24 +184,20 @@ if len(fembs) == 0:
    print ("All FEMB fail, exit anyway")
    exit()
 chk.wib_femb_link_en(fembs)
-############################################
-#      PART 03 SE Performance Measurement  #
-############################################
 datareport = a_func.Create_report_folders(fembs, fembName, env, toytpc, datadir)
-##### 3.1 Measure RMS at 200mV, 14mV/fC, 2us ###################
 print("Take RMS data")
 log.report_log04["ITEM"] = "3.1 Noise Measurement  200 mVBL  14 mV/fC  2 us"
 fname = "Raw_SE_{}_{}_{}_0x{:02x}".format("200mVBL","14_0mVfC","2_0us",0x00)
-snc = 1 # 200 mV
+snc = 1
 sg0 = 0
-sg1 = 0 # 14mV/fC
+sg1 = 0
 st0 = 1
-st1 = 1 # 2us
+st1 = 1
 
 chk.femb_cd_rst()
 cfg_paras_rec = []
 for i in range(8):
-    chk.adcs_paras[i][8]=1   # enable  auto
+    chk.adcs_paras[i][8]=1
 for femb_id in fembs:
     chk.set_fe_board(sts=0, snc=snc, sg0=sg0, sg1=sg1, st0=st0, st1=st1, swdac=0, dac=0x00 )
     adac_pls_en = 0
@@ -219,7 +205,7 @@ for femb_id in fembs:
     chk.femb_cfg(femb_id, adac_pls_en )
 time.sleep(LAr_Dalay)
 chk.data_align(fembs)
-rms_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0) #returns list of size 1
+rms_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0)
 if save:
     fp = datadir + fname + ".bin"
     with open(fp, 'wb') as fn:
@@ -234,13 +220,13 @@ if ship:
         print("=== Take ship RMS data ===")
         log.report_log04["ITEM"] = "3.1 No Buffer RMS at 900mV, 14mV/fC, 2us, DAC = 0x00"
         fname = "Raw_SE_{}_{}_{}_0x{:02x}".format("900mVBL", "14_0mVfC", pts[sti], 0x00)
-        snc = 0  # 900 mV
+        snc = 0
         sg0 = 0
-        sg1 = 0  # 14mV/fC
+        sg1 = 0
         chk.femb_cd_rst()
         cfg_paras_rec = []
         for i in range(8):
-            chk.adcs_paras[i][8]=1   # enable  auto
+            chk.adcs_paras[i][8]=1
         for femb_id in fembs:
             chk.set_fe_board(sts=0, snc=snc, sg0=sg0, sg1=sg1, st0=st0, st1=st1, swdac=0, dac=0x00 )
             adac_pls_en = 0
@@ -248,7 +234,7 @@ if ship:
             chk.femb_cfg(femb_id, adac_pls_en )
         time.sleep(LAr_Dalay)
         chk.data_align(fembs)
-        rms_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0) #returns list of size 1
+        rms_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0)
         a_func.rms_ped_ana(rms_rawdata, fembs, fembNo, datareport, fname)
         if save:
             fp = datadir + fname + ".bin"
@@ -279,12 +265,10 @@ if ship:
         plt.savefig(file_path + 'RMS_4_peak_time.png')
         plt.close()
 
-################ Measure FEMB currents 2 ####################
 print("Check FEMB current")
 pwr_meas2 = chk.get_sensors()
 result = False
-#####   3.2  SE interface current measure #####
-log.report_log05['ITEM'] = "3.2 SE OFF Power Measurement"   #05
+log.report_log05['ITEM'] = "3.2 SE OFF Power Measurement"
 for ifemb in fembs:
     femb_id = "FEMB ID {}".format(fembNo['femb%d' % ifemb])
     bias_i = round(pwr_meas2['FEMB%d_BIAS_I'%ifemb],3)
@@ -329,7 +313,6 @@ if save:
     with open(fp, 'wb') as fn:
         pickle.dump([pwr_meas2, fembs], fn)
 
-################# monitoring power rails ###################
 if Rail:
     log.report_log06["ITEM"] = "3.3 SE OFF LDO Measurement / mV"
     power_rail_d = a_func.monitor_power_rail("SE", fembs, datadir, save)
@@ -341,26 +324,25 @@ if Rail:
     log.report_log061 = dict(log.check_log)
 
 
-############ Take pulse data 900mV 14mV/fC 2us ##################
 print("Take SE OFF pulse data")
 fname = "Raw_SE_{}_{}_{}_0x{:02x}.bin".format("900mVBL","14_0mVfC","2_0us",0x10)
-snc = 0 # 900 mV
-sg0 = 0; sg1 = 0 # 14mV/fC
-st0 = 1; st1 = 1 # 2us3
+snc = 0
+sg0 = 0; sg1 = 0
+st0 = 1; st1 = 1
 log.report_log07["ITEM"] = "3.4 SE OFF Pulse Response [900mV 14mV/fC 2us]"
 chk.femb_cd_rst()
 cfg_paras_rec = []
 for i in range(8):
-    chk.adcs_paras[i][8]=1   # enable  auto
+    chk.adcs_paras[i][8]=1
 
 for femb_id in fembs:
     chk.set_fe_board(sts=1, snc=snc, sg0=sg0, sg1=sg1, st0=st0, st1=st1, swdac=1, dac=0x10 )
     adac_pls_en = 1
     cfg_paras_rec.append( (femb_id, copy.deepcopy(chk.adcs_paras), copy.deepcopy(chk.regs_int8), adac_pls_en) )
-    chk.femb_cfg(femb_id, adac_pls_en )     # enable the Pulse
+    chk.femb_cfg(femb_id, adac_pls_en )
 time.sleep(LAr_Dalay)
 chk.data_align(fembs)
-pls_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0) #returns list of size 1
+pls_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0)
 
 if save:
     fp = datadir + fname
@@ -368,9 +350,6 @@ if save:
         pickle.dump( [pls_rawdata, cfg_paras_rec, fembs], fn)
 
 a_func.se_pulse_ana(pls_rawdata, fembs, fembNo, datareport, fname)
-##############################################
-#      PART 04 DIFF Performance Measurement  #
-##############################################
 
 print("Take differential pulse data")
 fname = "Raw_DIFF_{}_{}_{}_0x{:02x}".format("900mVBL","14_0mVfC","2_0us",0x10)
@@ -378,8 +357,8 @@ chk.femb_cd_rst()
 cfg_paras_rec = []
 log.report_log08["ITEM"] = "4.1 DIFF Pulse Measurement at 900mV, 14mV/fC, 2us"
 for i in range(8):
-    chk.adcs_paras[i][2]=1   # enable differential
-    chk.adcs_paras[i][8]=1   # enable  auto
+    chk.adcs_paras[i][2]=1
+    chk.adcs_paras[i][8]=1
 for femb_id in fembs:
     chk.set_fe_board(sts=1, snc=snc, sg0=sg0, sg1=sg1, st0=st0, st1=st1, sdd=1, swdac=1, dac=0x10 )
     adac_pls_en = 1
@@ -387,7 +366,7 @@ for femb_id in fembs:
     chk.femb_cfg(femb_id, adac_pls_en )
 time.sleep(LAr_Dalay)
 chk.data_align(fembs)
-pls_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0) #returns list of size 1
+pls_rawdata = chk.spybuf_trig(fembs=fembs, num_samples=sample_N, trig_cmd=0)
 
 if save:
     fp = datadir + fname + ".bin"
@@ -396,10 +375,9 @@ if save:
 
 a_func.DIFF_pulse_data(pls_rawdata, fembs, fembNo,datareport, fname)
 
-#####   4.2  DIFF interface current measure #####
 print("Check DIFF current")
 pwr_meas3 = chk.get_sensors()
-log.report_log09['ITEM'] = "4.2 DIFF Power Measurement"   #05
+log.report_log09['ITEM'] = "4.2 DIFF Power Measurement"
 result = False
 for ifemb in fembs:
     femb_id = "FEMB ID {}".format(fembNo['femb%d' % ifemb])
@@ -445,7 +423,6 @@ if save:
     with open(fp, 'wb') as fn:
         pickle.dump([pwr_meas3, fembs], fn)
 
-######   DIFF monitor power rails   ######
 power_rail_a = 0
 if Rail:
     log.report_log10["ITEM"] = "4.3 DIFF LDO Measurement / mV"
@@ -457,34 +434,29 @@ if Rail:
     log.report_log10csv.update(log10csv)
     log.report_log101 = dict(log.check_log)
 
-##################################
-#      PART 05 Monitor Path      #
-##################################
-snc = 0 # 900 mV
-sg0 = 0; sg1 = 0 # 14 mV/fC
-st0 = 1; st1 = 1 # 2 us3
+snc = 0
+sg0 = 0; sg1 = 0
+st0 = 1; st1 = 1
 chk.femb_cd_rst()
 cfg_paras_rec = []
 for i in range(8):
-    chk.adcs_paras[i][8]=1   # enable  auto
+    chk.adcs_paras[i][8]=1
 
 for femb_id in fembs:
     chk.set_fe_board(sts=1, snc=snc, sg0=sg0, sg1=sg1, st0=st0, st1=st1, swdac=1, dac=0x10 )
     adac_pls_en = 1
     cfg_paras_rec.append((femb_id, copy.deepcopy(chk.adcs_paras), copy.deepcopy(chk.regs_int8), adac_pls_en))
-    chk.femb_cfg(femb_id, adac_pls_en )     # enable the Pulse
+    chk.femb_cfg(femb_id, adac_pls_en )
 
 mon_refs, mon_temps, mon_adcs = a_func.monitoring_path(fembs, snc, sg0,sg1,datadir, save)
 a_func.mon_path_ana(fembs, mon_refs, mon_temps, mon_adcs, datareport, fembNo, env, NewWIB, ground = power_rail_a)
 
 
-#================   Final Report    ===================================
 a_repo.final_report(datareport, fembs, fembNo, Rail)
 a_CSV.final_CSV(datareport, fembs, fembNo, Rail)
 t2=time.time()
 print('Time Consumption: {} s'.format(round(t2 - t1, 2)))
 
-####### Power off FEMBs #######
 print("Turning off FEMBs")
 chk.femb_powering([])
 print("\n\n\n\n\n\n")

@@ -468,7 +468,7 @@ time.sleep(1)
 
 update_email_receiver_in_config(receiver)
 confirm_function("Please confirm the CTS Monitor is Open")
-shifter_log_url = "https://docs.google.com/document/d/1blOAo82yAw1hYqBfaX0Y-f9ryWvKk4AIe2pfF1pgADU/edit?tab=t.awmaren3g49n#heading=h.kefll287v4wn"
+shifter_log_url = "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2"
 print(f"Please open shifter log link in Chrome: {shifter_log_url}")
 try:
     chrome_path = webbrowser.get('google-chrome')

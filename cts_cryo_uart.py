@@ -156,8 +156,9 @@ class cryobox:
             print(f"Cryo Control Box Serial close error: {e}")
 
     def uart_write(self, mode=b'1'):
+        attempt = 0
         while True:
-            try: 
+            try:
                 self.ser.write(mode+b'\r')
                 return True
             except serial.SerialTimeoutException as e:
@@ -176,6 +177,11 @@ class cryobox:
                     else:
                         print("Invalid input. Please enter 'Y' or 'N'.")
             except Exception as e:
+                attempt += 1
+                if attempt < 5:
+                    print(f"Cryo Control Box Unexpected Serial error (attempt {attempt}/5): {e}, retrying...")
+                    continue
+                attempt = 0
                 print(f"Cryo Control Box Unexpected Serial error: {e}")
                 print("Please call the tech coordinator to fix it.")
                 while True:
