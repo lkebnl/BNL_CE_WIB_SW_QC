@@ -42,6 +42,13 @@ def show_image_popup(
     main_frame = ttk.Frame(root, padding=pad_main)
     main_frame.pack(fill="both", expand=True)
 
+    # === Top Confirm Button ===
+    ttk.Button(
+        main_frame,
+        text="Confirm",
+        command=close_window
+    ).pack(padx=pad_button, pady=pad_button)
+
     # === Image display ===
     if image_path:
         try:
@@ -68,13 +75,6 @@ def show_image_popup(
         except Exception as e:
             print(f"Error loading image: {e}")
             ttk.Label(main_frame, text="Error loading image.", font=("Arial", font_size_error)).pack(expand=True)
-
-    # === Bottom Close Button ===
-    ttk.Button(
-        main_frame,
-        text="Confirm",
-        command=close_window
-    ).pack(padx=pad_button, pady=pad_button)
 
     root.mainloop()
 

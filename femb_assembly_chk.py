@@ -152,6 +152,10 @@ for ifemb in fembs:
     else:
         print("FEMB ID {} Pass current check".format(fembNo['femb%d'%ifemb]))
         result = True
+
+for femb_id in fembs_remove:
+    fembs.remove(femb_id)
+
 for ifemb in range(len(fembs)):
     femb_id = "FEMB ID {}".format(fembNo['femb%d' % fembs[ifemb]])
     initial_power = a_func.power_ana(fembs, ifemb, femb_id, pwr_meas1, env)
@@ -164,9 +168,6 @@ for ifemb in range(len(fembs)):
     coldata_SN_CD1 = chk.dat_coldata_efuse_rd(femb_id=fembs[ifemb], cd_id="CD2", efuseid=2)
     log.report_log00[femb_id]["COLDATA_SN_CD0"] = coldata_SN_CD0
     log.report_log00[femb_id]["COLDATA_SN_CD1"] = coldata_SN_CD1
-
-for femb_id in fembs_remove:
-    fembs.remove(femb_id)
 
 if len(fembs) == 0:
     print ("All FEMB fail, exit anyway")

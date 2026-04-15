@@ -272,5 +272,6 @@ def final_report(datareport, fembs, fembNo, Rail=True):
             line = "------\n"
             file.write(line + '<br>\n')
             file.write('lke@bnl.gov' + '<br>\n')
+            file.write('Made by Lingyun Ke' + '<br>\n')
 
             print("Checkout Report Saved")

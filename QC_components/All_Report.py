@@ -1374,6 +1374,6 @@ def final_report(datareport, fembs, fembNo, fembsName):
             # if check_status[11-1] is not None:
             #     file.write('<img src="./MON_FE/mon_LArASIC_DAC_25mVfC.png" alt="picture" height="250">' + "\n\n")  # width="200"
             file.write("------\n")
-            # file.write('lke@bnl.gov' + '<br>\n')
+            file.write('Made by Lingyun Ke' + '\n')
 
             print("QC Report file saved")

@@ -2955,7 +2955,7 @@ print(Fore.CYAN + f"FEMB IDs: {', '.join(femb_ids) if femb_ids else 'None'}" + S
 confirm_function("Please confirm the CTS is power off")
 ### 55. Close CTS and Exit
 while True:
-    print("Enter 'Exit' to exit ...")
+    print("Enter 'exit' to exit ...")
     com = input(Fore.YELLOW + '>> ' + Style.RESET_ALL)
     if com.lower() == "exit":
         break
@@ -2968,6 +2968,6 @@ while True:
 ### 56. Main Entry - Close Terminal Window
 if __name__ == "__main__":
     print(Fore.CYAN + "Process ongoing..." + Style.RESET_ALL)
-    print(Fore.GREEN + "✓ Completed. Enter 'Exit' in the last line to exit ..." + Style.RESET_ALL)
+    print(Fore.GREEN + "✓ Completed. Enter 'exit' in the last line to exit ..." + Style.RESET_ALL)
     time.sleep(1)
     # close_terminal()
