@@ -18,7 +18,7 @@ ag.add_argument("folder", help="data folder", type=str)
 args = ag.parse_args()
 fdir = args.folder
 
-def QC_Process(QC_TST_EN=None, input_info=None, save_path = "D:/FEMB_QC/Data/"):
+def QC_Process(QC_TST_EN=None, input_info=None, save_path=None):
     while True:
         QCresult = cts.cts_ssh_FEMB(root=save_path, QC_TST_EN=QC_TST_EN, input_info=input_info)
         if QCresult != None:
@@ -39,7 +39,7 @@ def QC_Process(QC_TST_EN=None, input_info=None, save_path = "D:/FEMB_QC/Data/"):
     return QCstatus, badchips  # badchips range from 0 to7
 
 
-def FEMB_QC(input_info, save_path="D:/FEMB_QC/Data/"):
+def FEMB_QC(input_info, save_path=None):
     # B Power On Warm Interface Board
     print("\033[35m" + "B00 : Turn Power Supply on to Power On WIB" + "\033[0m")
     input("Enter to next ...\n")

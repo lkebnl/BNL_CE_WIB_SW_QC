@@ -24,20 +24,20 @@ receiver = "lke@bnl.gov"
 
 
 
-wcdata_path    = r"D:\data\temp"
-wcreport_path  = r"D:\data\temp"
-wqdata_path    = r"D:\data\temp"
-wqreport_path  = r"D:\data\temp"
-lcdata_path    = r"D:\data\temp"
-lcreport_path  = r"D:\data\temp"
-lqdata_path    = r"D:\data\temp"
-lqreport_path  = r"D:\data\temp"
-fcdata_path    = r"D:\data\temp"
-fcreport_path  = r"D:\data\temp"
+wcdata_path    = None
+wcreport_path  = None
+wqdata_path    = None
+wqreport_path  = None
+lcdata_path    = None
+lcreport_path  = None
+lqdata_path    = None
+lqreport_path  = None
+fcdata_path    = None
+fcreport_path  = None
 
 
 colorama.init()
-def QC_Process(path = "D:", QC_TST_EN=None, input_info=None):
+def QC_Process(path=None, QC_TST_EN=None, input_info=None):
     global data_path, report_path
     while True:
         QCresult = cts.cts_ssh_FEMB(root="{}/FEMB_QC/".format(path), QC_TST_EN=QC_TST_EN, input_info=input_info)

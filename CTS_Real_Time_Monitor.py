@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import time
 import subprocess
 from datetime import datetime
@@ -335,7 +336,10 @@ def real_time_monitor():
                     time.sleep(c*12)  # the time is used to copy the whole .bin file
                 slot = n
                 item = t_num
-                command = ["python3 QC_report_all.py" + " " + path  + " " +  "-n " + slot + " -t " + item]
+                if platform.system() == "Windows":
+                    command = ["python3", "QC_report_all.py", path, "-n", slot, "-t", item]
+                else:
+                    command = ["python3 QC_report_all.py" + " " + path + " " + "-n " + slot + " -t " + item]
                 # command.extend(map(str, n))  # Convert integers to strings
                 # command.extend([" -t ", t_num])  # Add other arguments
                 result = subrun(command, timeout=1000)  # rewrite with Popen later

@@ -400,16 +400,16 @@ sender = "bnlr216@gmail.com"
 password = "vvef tosp minf wwhf"
 receiver = "lke@bnl.gov"
 
-wcdata_path = r"D:\data\temp"
-wcreport_path = r"D:\data\temp"
-wqdata_path = r"D:\data\temp"
-wqreport_path = r"D:\data\temp"
-lcdata_path = r"D:\data\temp"
-lcreport_path = r"D:\data\temp"
-lqdata_path = r"D:\data\temp"
-lqreport_path = r"D:\data\temp"
-fcdata_path = r"D:\data\temp"
-fcreport_path = r"D:\data\temp"
+wcdata_path = None
+wcreport_path = None
+wqdata_path = None
+wqreport_path = None
+lcdata_path = None
+lcreport_path = None
+lqdata_path = None
+lqreport_path = None
+fcdata_path = None
+fcreport_path = None
 colorama.init()
 print(ROOT_DIR)
 technician_csv = os.path.join(ROOT_DIR, "init_setup.csv")
@@ -2590,17 +2590,17 @@ FEMB Results:
 
                     email_body += "\nTest Paths:\n"
                     missing_paths = []
-                    if wqdata_path and wqdata_path != r"D:\data\temp":
+                    if wqdata_path:
                         email_body += f"  Warm QC Data: {wqdata_path}\n"
                         email_body += f"  Warm QC Report: {wqreport_path}\n"
                     else:
                         missing_paths.append("Warm QC")
-                    if lqdata_path and lqdata_path != r"D:\data\temp":
+                    if lqdata_path:
                         email_body += f"  Cold QC Data: {lqdata_path}\n"
                         email_body += f"  Cold QC Report: {lqreport_path}\n"
                     else:
                         missing_paths.append("Cold QC")
-                    if fcdata_path and fcdata_path != r"D:\data\temp":
+                    if fcdata_path:
                         email_body += f"  Final Checkout Data: {fcdata_path}\n"
                         email_body += f"  Final Checkout Report: {fcreport_path}\n"
                     else:
@@ -2704,19 +2704,19 @@ if 6 in state_list or goto_disassembly:
         assembly_data_all = parse_assembly_data_from_comment(comment_str)
         disassembly_paths = []
         # Add warm checkout paths (Phase 3)
-        if 'wcdata_path' in locals() and wcdata_path and wcdata_path != r"D:\data\temp":
+        if 'wcdata_path' in locals() and wcdata_path:
             disassembly_paths.extend([wcdata_path, wcreport_path])
         # Add warm QC paths (Phase 3)
-        if 'wqdata_path' in locals() and wqdata_path and wqdata_path != r"D:\data\temp":
+        if 'wqdata_path' in locals() and wqdata_path:
             disassembly_paths.extend([wqdata_path, wqreport_path])
         # Add cold checkout paths (Phase 4)
-        if 'lcdata_path' in locals() and lcdata_path and lcdata_path != r"D:\data\temp":
+        if 'lcdata_path' in locals() and lcdata_path:
             disassembly_paths.extend([lcdata_path, lcreport_path])
         # Add cold QC paths (Phase 4)
-        if 'lqdata_path' in locals() and lqdata_path and lqdata_path != r"D:\data\temp":
+        if 'lqdata_path' in locals() and lqdata_path:
             disassembly_paths.extend([lqdata_path, lqreport_path])
         # Add final checkout paths (Phase 5)
-        if 'fcdata_path' in locals() and fcdata_path and fcdata_path != r"D:\data\temp":
+        if 'fcdata_path' in locals() and fcdata_path:
             disassembly_paths.extend([fcdata_path, fcreport_path])
 
         # Get QC test results to determine PASS/FAIL for each slot
@@ -2891,31 +2891,31 @@ print("=" * 70 + Style.RESET_ALL)
 print(Fore.YELLOW + "\n📁 Collecting test result paths from this run..." + Style.RESET_ALL)
 
 # Add warm checkout paths (Phase 3)
-if wcdata_path != r"D:\data\temp":
+if wcdata_path:
     paths.extend([wcdata_path, wcreport_path])
     print(Fore.CYAN + f"  ✓ Warm Checkout Data:   {wcdata_path}" + Style.RESET_ALL)
     print(Fore.CYAN + f"  ✓ Warm Checkout Report: {wcreport_path}" + Style.RESET_ALL)
 
 # Add warm QC paths (Phase 3)
-if wqdata_path != r"D:\data\temp":
+if wqdata_path:
     paths.extend([wqdata_path, wqreport_path])
     print(Fore.CYAN + f"  ✓ Warm QC Data:         {wqdata_path}" + Style.RESET_ALL)
     print(Fore.CYAN + f"  ✓ Warm QC Report:       {wqreport_path}" + Style.RESET_ALL)
 
 # Add cold checkout paths (Phase 4)
-if lcdata_path != r"D:\data\temp":
+if lcdata_path:
     paths.extend([lcdata_path, lcreport_path])
     print(Fore.CYAN + f"  ✓ Cold Checkout Data:   {lcdata_path}" + Style.RESET_ALL)
     print(Fore.CYAN + f"  ✓ Cold Checkout Report: {lcreport_path}" + Style.RESET_ALL)
 
 # Add cold QC paths (Phase 4)
-if lqdata_path != r"D:\data\temp":
+if lqdata_path:
     paths.extend([lqdata_path, lqreport_path])
     print(Fore.CYAN + f"  ✓ Cold QC Data:         {lqdata_path}" + Style.RESET_ALL)
     print(Fore.CYAN + f"  ✓ Cold QC Report:       {lqreport_path}" + Style.RESET_ALL)
 
 # Add final checkout paths (Phase 5)
-if fcdata_path != r"D:\data\temp":
+if fcdata_path:
     paths.extend([fcdata_path, fcreport_path])
     print(Fore.CYAN + f"  ✓ Final Checkout Data:  {fcdata_path}" + Style.RESET_ALL)
     print(Fore.CYAN + f"  ✓ Final Checkout Report: {fcreport_path}" + Style.RESET_ALL)

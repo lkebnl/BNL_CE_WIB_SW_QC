@@ -33,16 +33,16 @@ sender = "bnlr216@gmail.com"
 password = "vvef tosp minf wwhf"
 receiver = "lke@bnl.gov"
 
-wcdata_path = r"D:\data\temp"
-wcreport_path = r"D:\data\temp"
-wqdata_path = r"D:\data\temp"
-wqreport_path = r"D:\data\temp"
-lcdata_path = r"D:\data\temp"
-lcreport_path = r"D:\data\temp"
-lqdata_path = r"D:\data\temp"
-lqreport_path = r"D:\data\temp"
-fcdata_path = r"D:\data\temp"
-fcreport_path = r"D:\data\temp"
+wcdata_path = None
+wcreport_path = None
+wqdata_path = None
+wqreport_path = None
+lcdata_path = None
+lcreport_path = None
+lqdata_path = None
+lqreport_path = None
+fcdata_path = None
+fcreport_path = None
 
 colorama.init()
 

@@ -1,4 +1,5 @@
 import logging
+import platform
 import time
 import sys
 import subprocess
@@ -130,7 +131,9 @@ def read_csv_to_dict(filename, env, p = False):
     return data
 
 
-def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None):
+def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None):
+    if root is None:
+        root = os.path.join(os.path.expanduser("~"), "FEMB_QC") + "/"
     # QC_TST_EN = True
     logs = {}  # from collections import defaultdict report_log01 = defaultdict(dict)
     logs['CTS_IDs'] = input_info['test_site']
@@ -242,19 +245,24 @@ def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None):
 
     if QC_TST_EN == 0:
         print(datetime.utcnow(), " : sync WIB time")
-        # Get the current date and time
-        now = datetime.utcnow()
-        # Format it to match the output of the `date` command
-        formatted_now = now.strftime('%a %b %d %H:%M:%S UTC %Y')
-        command = ["ssh", "root@192.168.121.123", "date -s \'{}\'".format(formatted_now)]
-        result = subrun(command, timeout=30,shell=False)
-        time.sleep(0.01)
-        if result != None:
-            print("WIB Time: ", result.stdout)
-            print(datetime.utcnow(), "\033[92m  : SUCCESS!  \033[0m")
-            logs['WIB_UTC_Date_Time'] = result.stdout
-        else:
-            print("FAIL!")
+        wib_time_synced = False
+        for _attempt in range(3):
+            now = datetime.utcnow()
+            formatted_now = now.strftime('%a %b %d %H:%M:%S UTC %Y')
+            command = ["ssh", "root@192.168.121.123", "date -s \'{}\'".format(formatted_now)]
+            result = subrun(command, timeout=30, shell=False)
+            time.sleep(0.01)
+            if result != None:
+                print("WIB Time: ", result.stdout)
+                print(datetime.utcnow(), "\033[92m  : SUCCESS!  \033[0m")
+                logs['WIB_UTC_Date_Time'] = result.stdout
+                wib_time_synced = True
+                break
+            else:
+                print(f"FAIL! (attempt {_attempt+1}/3)")
+                time.sleep(1)
+        if not wib_time_synced:
+            print("\033[91m  WIB time sync failed after 3 attempts. Please check the connection!  \033[0m")
             return None
 
     if QC_TST_EN == 0:
@@ -474,10 +482,16 @@ def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None):
                 wibhost = "root@192.168.121.123:"
                 fsrc = wibhost + fdir
                 fsrc2 = wibhost + fdir2
-                command = ["scp -r " + fsrc2 + " " + fddir2]
+                if platform.system() == "Windows":
+                    command = ["scp", "-r", fsrc2, fddir2]
+                else:
+                    command = ["scp -r " + fsrc2 + " " + fddir2]
                 subrun(command, timeout=10, check=False, out = False)
                 time.sleep(1)
-                command = ["scp -r " + fsrc + " " + fddir]
+                if platform.system() == "Windows":
+                    command = ["scp", "-r", fsrc, fddir]
+                else:
+                    command = ["scp -r " + fsrc + " " + fddir]
                 result = subrun(command, timeout=10, check=False, out = False)
                 if 'LN' in tmp:
                     os.makedirs(fddir2, exist_ok=True)
@@ -685,7 +699,10 @@ def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None):
             wibhost = "root@192.168.121.123:"
             fsrc = wibhost + fdir
             # move folder
-            command = ["scp -r " + fsrc + " " + fddir]
+            if platform.system() == "Windows":
+                command = ["scp", "-r", fsrc, fddir]
+            else:
+                command = ["scp -r " + fsrc + " " + fddir]
             result = subrun(command, timeout=100, check=False, out=False)
             # if result != None:
             print("data save at {}".format(fddir))

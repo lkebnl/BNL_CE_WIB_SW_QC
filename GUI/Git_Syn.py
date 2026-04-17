@@ -30,7 +30,7 @@ def clear_and_copy_all_to_remote(local_path, remote_user, remote_host, remote_pa
 
 repo_url = "https://github.com/sgaobnl/BNL_CE_WIB_SW_QC.git"
 branch_name = "CTS_FEMB_QC"
-local_path = "D:/github/repository"
+local_path = os.path.join(os.path.expanduser("~"), "github", "repository")
 remote_user = "root"
 remote_host = "192.168.121.123"
 remote_path = "/home/root/BNL_CE_WIB_SW_QC/"
