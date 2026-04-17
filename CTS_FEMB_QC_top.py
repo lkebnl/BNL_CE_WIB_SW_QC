@@ -61,6 +61,19 @@ def print_status(status_type, message):
     icon, color = icons.get(status_type, ('•', Fore.WHITE))
     print(color + f"{icon} {message}" + Style.RESET_ALL)
 
+_VALID_FEMB_BOARDS = [
+    'IO-1865-1J', 'IO-1865-1K', 'IO-1865-1L', 'IO-1865-1G',
+    'IO-1865-1D', 'IO-1865-1E', 'IO-1826-1L', 'IO-1865-1H',
+]
+
+def is_valid_femb_id(femb_id):
+    # Normalize O/0 confusion: treat '0' as 'O' for board type matching
+    normalized = femb_id.replace('0', 'O')
+    if 'BNL' not in normalized or 'FEMB' not in normalized:
+        return False
+    return any(board in normalized for board in _VALID_FEMB_BOARDS)
+
+
 def print_separator(char="-", length=70):
     """Print a separator line"""
     print(Fore.CYAN + char * length + Style.RESET_ALL)
@@ -346,12 +359,13 @@ def collect_assembly_data(slot_name):
     # Step 2: Scan/Type CE box QR code
     while True:
         print(Fore.CYAN + "         Step: Scan CE box QR code" + Style.RESET_ALL)
+        print(Fore.CYAN + "               (SN starts with 'VD-' or 'HD-')" + Style.RESET_ALL)
         ce_box_sn = input(Fore.YELLOW + '         Scan CE box QR code or type SN: ' + Style.RESET_ALL).strip()
 
         if not ce_box_sn:
             print_status('error', "         CE box SN cannot be empty. Please try again.")
-        elif 'VD-' not in ce_box_sn:
-            print_status('error', "         Invalid CE box SN: must contain 'VD-'. Please scan again.")
+        elif not (ce_box_sn.startswith('VD-') or ce_box_sn.startswith('HD-')):
+            print_status('error', "         Invalid CE box SN: must start with 'VD-' or 'HD-'. Please scan again.")
         else:
             print_status('success', f"         CE box SN recorded: {ce_box_sn}")
             break
@@ -818,18 +832,18 @@ if 1 in state_list:
                 femb_id_00 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
                 ##### Validate: Must contain 'BNL', 'FEMB', and 'IO-1865-1L'
-                if ('BNL' in femb_id_00) and ('FEMB' in femb_id_00) and ('IO-1865-1L' in femb_id_00):
+                if is_valid_femb_id(femb_id_00):
                     break
                 else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
             while True:
                 print(Fore.CYAN + "         [2/2] Scan the FEMB QR code (2nd scan)" + Style.RESET_ALL)
                 femb_id_01 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
-                if ('BNL' in femb_id_01) and ('FEMB' in femb_id_01) and ('IO-1865-1L' in femb_id_01):
+                if is_valid_femb_id(femb_id_01):
                     break
                 else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
 
             ##### Match check - If scans match, proceed; else require 3rd scan
             if femb_id_01 == femb_id_00:
@@ -842,18 +856,18 @@ if 1 in state_list:
                     while True:
                         print("         Scan bottom FEMB QR code " + Fore.CYAN + "(3rd attempt - try 1):" + Style.RESET_ALL)
                         femb_id_2 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ('BNL' in femb_id_2) and ('FEMB' in femb_id_2) and ('IO-1865-1L' in femb_id_2):
+                        if is_valid_femb_id(femb_id_2):
                             break
                         else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
 
                     while True:
                         print("         Scan bottom FEMB QR code " + Fore.CYAN + "(3rd attempt - try 2):" + Style.RESET_ALL)
                         femb_id_3 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ('BNL' in femb_id_3) and ('FEMB' in femb_id_3) and ('IO-1865-1L' in femb_id_3):
+                        if is_valid_femb_id(femb_id_3):
                             break
                         else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
 
                     if femb_id_2 == femb_id_3:
                         print(Fore.GREEN + "         ✓ QR codes match. Proceeding..." + Style.RESET_ALL)
@@ -975,20 +989,20 @@ if 1 in state_list:
                 femb_id_10 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
                 ##### Validate: Must contain 'BNL', 'FEMB', and 'IO-1865-1L'
-                if ('BNL' in femb_id_10) and ('FEMB' in femb_id_10) and ('IO-1865-1L' in femb_id_10):
+                if is_valid_femb_id(femb_id_10):
                     break
                 else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
 
             ##### Second scan
             while True:
                 print(Fore.YELLOW + "         Step 1.22: " + Style.RESET_ALL + "Scan the FEMB QR code " + Fore.CYAN + "(2nd scan)" + Style.RESET_ALL)
                 femb_id_11 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
 
-                if ('BNL' in femb_id_11) and ('FEMB' in femb_id_11) and ('IO-1865-1L' in femb_id_11):
+                if is_valid_femb_id(femb_id_11):
                     break
                 else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again.")
+                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
 
             ##### Match check - If scans match, proceed; else require 3rd scan
             if femb_id_11 == femb_id_10:
@@ -1002,18 +1016,18 @@ if 1 in state_list:
                     while True:
                         print("         Scan top FEMB QR code " + Fore.CYAN + "(3rd attempt - try 1):" + Style.RESET_ALL)
                         femb_id_2 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ('BNL' in femb_id_2) and ('FEMB' in femb_id_2) and ('IO-1865-1L' in femb_id_2):
+                        if is_valid_femb_id(femb_id_2):
                             break
                         else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
 
                     while True:
                         print("         Scan top FEMB QR code " + Fore.CYAN + "(3rd attempt - try 2):" + Style.RESET_ALL)
                         femb_id_3 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if ('BNL' in femb_id_3) and ('FEMB' in femb_id_3) and ('IO-1865-1L' in femb_id_3):
+                        if is_valid_femb_id(femb_id_3):
                             break
                         else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and 'IO-1865-1L'. Please try again." + Style.RESET_ALL)
+                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
 
                     if femb_id_2 == femb_id_3:
                         print(Fore.GREEN + "         ✓ QR codes match. Proceeding..." + Style.RESET_ALL)

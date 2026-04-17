@@ -1,4 +1,5 @@
 import logging
+import platform
 import time
 import sys
 import subprocess
@@ -15,6 +16,9 @@ import GUI.send_email as send_email_module
 import components.assembly_log as log
 import shutil
 
+wibip = "192.168.121.123"
+wibhost = "root@{}".format(wibip)
+sshcmd = ["ssh","-o", "ConnectTimeout=60",  "-o", "ServerAliveInterval=20", "-o", "ServerAliveCountMax=2"]
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Read network path from config
@@ -66,7 +70,72 @@ def sync_to_network(local_dir, dir_type='data'):
         print(f"[SYNC] ERROR: Network sync failed: {e}")
 
 
-def subrun(command, timeout=30, check=True, out=True, exitflg=True, user_input=None, rm=False, shell=False):
+def _subrun_windows(command, timeout=30, check=True, out=True, exitflg=True, user_input=None, rm=False, shell=True):
+    result = None
+    if check:
+        try:
+            result = subprocess.run(command,
+                                    input=user_input,
+                                    capture_output=check,
+                                    text=True,
+                                    timeout=timeout,
+                                    shell=shell,
+                                    check=check
+                                    )
+        except subprocess.CalledProcessError as e:
+            print("Call Error", e.returncode)
+            if exitflg:
+                return None
+        except subprocess.TimeoutExpired as T:
+            print("No reponse in %d seconds" % (timeout))
+            if exitflg:
+                print("Timeout FAIL!")
+                print("Exit anyway")
+                return None
+        return result
+    elif out:
+        try:
+            result = subprocess.run(command,
+                                    input=user_input,
+                                    capture_output=check,
+                                    text=True,
+                                    timeout=timeout,
+                                    shell=shell,
+                                    check=check
+                                    )
+        except subprocess.CalledProcessError as e:
+            print("Call Error", e.returncode)
+            if exitflg:
+                print("Call Error FAIL!")
+                print("Exit anyway")
+                return None
+        except subprocess.TimeoutExpired as T:
+            print("No reponse in %d seconds" % (timeout))
+            return None
+        return result
+    else:
+        try:
+            result = subprocess.run(command,
+                                    input=user_input,
+                                    capture_output=check,
+                                    text=True,
+                                    timeout=timeout,
+                                    shell=shell,
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                    check=check
+                                    )
+        except subprocess.CalledProcessError as e:
+            print("Call Error", e.returncode)
+            if exitflg:
+                return None
+        except subprocess.TimeoutExpired as T:
+            print("No reponse in %d seconds" % (timeout))
+            return None
+        return result
+
+
+def _subrun_linux(command, timeout=30, check=True, out=True, exitflg=True, user_input=None, rm=False, shell=False):
     result = None
     # print("command = {}".format(command))
     if check:
@@ -108,7 +177,7 @@ def subrun(command, timeout=30, check=True, out=True, exitflg=True, user_input=N
                                     capture_output=check,
                                     text=True,
                                     timeout=timeout,
-                                    shell=True,
+                                    shell=shell,
                                     # stdout=subprocess.PIPE,
                                     # stderr=subprocess.PIPE,
                                     check=check
@@ -134,7 +203,7 @@ def subrun(command, timeout=30, check=True, out=True, exitflg=True, user_input=N
                                     capture_output=check,
                                     text=True,
                                     timeout=timeout,
-                                    shell=True,
+                                    shell=shell,
                                     stdout=subprocess.DEVNULL,  # discard stdout
                                     stderr=subprocess.DEVNULL,
                                     check=check
@@ -151,6 +220,13 @@ def subrun(command, timeout=30, check=True, out=True, exitflg=True, user_input=N
             print("No reponse in %d seconds" % (timeout))
             return None
         return result
+
+
+if platform.system() == "Windows":
+    print('debug windows')
+    subrun = _subrun_windows
+else:
+    subrun = _subrun_linux
 
 
 # =================#
@@ -360,7 +436,10 @@ def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None, email_info=No
 
     if QC_TST_EN == 77:
         print(datetime.now(timezone.utc), " : Check if WIB is pingable (it takes < 60s)")
-        command = ["ping", "-c", "3", "192.168.121.123"]
+        if platform.system() == "Windows":
+            command = ["ping", "-n", "3", "192.168.121.123"]
+        else:
+            command = ["ping", "-c", "3", "192.168.121.123"]
         print("COMMAND: ", command)
         attempt = 0
         while True:
@@ -384,11 +463,9 @@ def cts_ssh_FEMB(root="D:/FEMB_QC/", QC_TST_EN=0, input_info=None, email_info=No
 
     if QC_TST_EN == 0:
         print(datetime.now(timezone.utc), " : sync WIB time")
-        # Get the current date and time
-        now = datetime.now(timezone.utc)
-        # Format it to match the output of the `date` command
-        formatted_now = now.strftime('%a %b %d %H:%M:%S UTC %Y')
-        command = ["ssh", "root@192.168.121.123", "date -s \'{}\'".format(formatted_now)]
+        ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        print("PC Time: ", ts)
+        command = sshcmd + ["root@192.168.121.123", f"date -s '{ts}' && hwclock -w"]
         result = subrun(command, timeout=30, shell=False)
         time.sleep(0.01)
         if result != None:

@@ -407,6 +407,9 @@ def QC_Process(path="D:", QC_TST_EN=None, input_info=None, pre_info=None):
 
     email_info = {'sender': sender, 'password': password, 'receiver': receiver}
 
+    data_path = 'N/A'
+    report_path = 'N/A'
+
     while True:
         QCresult = cts.cts_ssh_FEMB(root="{}/FEMB_QC/".format(path), QC_TST_EN=QC_TST_EN, input_info=input_info, email_info=email_info)
         if QCresult != None:
