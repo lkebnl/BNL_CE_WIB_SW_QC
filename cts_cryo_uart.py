@@ -13,6 +13,12 @@ import serial
 from colorama import just_fix_windows_console, Fore, Style
 just_fix_windows_console()
 
+# Ubuntu / Linux  (e.g. '/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyUSB0')
+CTS_PORT_LINUX   = None   # <-- fill in, e.g. '/dev/ttyACM1'
+
+# Windows         (e.g. 'COM3', 'COM4')
+CTS_PORT_WINDOWS = 'COM5'   # <-- fill in, e.g. 'COM3'
+
 # Import send_email for timeout notifications
 try:
     import GUI.send_email as send_email
@@ -43,14 +49,32 @@ except ImportError:
 #Black = '\033[90m'
 #Default = '\033[99m'
 
+# ============================================================
+# CTS Serial Port Configuration
+# Fill in the port for your platform and leave the other None.
+# ============================================================
+
+
+
+import platform as _platform
+_os = _platform.system()
+if _os == "Windows" and CTS_PORT_WINDOWS:
+    CTS_PORT = CTS_PORT_WINDOWS
+elif _os != "Windows" and CTS_PORT_LINUX:
+    CTS_PORT = CTS_PORT_LINUX
+else:
+    CTS_PORT = None   # auto-detect via get_serial_ports()
+
+# ============================================================
+
 from serial.tools import list_ports
 
 def get_serial_ports():
     ports = []
     for port in list_ports.comports():
-        #if port.device.startswith("/dev/ttyACM") or port.device.startswith("/dev/ttyUSB"):
-        if port.device.startswith("/dev/ttyACM") :
-            ports.append(port.device)
+        dev = port.device
+        if dev.startswith("/dev/ttyACM") or dev.startswith("/dev/ttyUSB") or dev.startswith("COM"):
+            ports.append(dev)
     return ports
 
 
@@ -96,7 +120,7 @@ class cryobox:
         self.cmd_dict[b'2'] = b'Setting STATE to 2 (Warm Gas)'
         self.cmd_dict[b'3'] = b'Setting STATE to 3 (Cold Gas)'
         self.cmd_dict[b'4'] = b'Setting STATE to 4 (LN2 Immersion)'
-        self.portno = '/dev/ttyACM1'
+        self.portno = CTS_PORT if CTS_PORT else '/dev/ttyACM1'
         self.ser = None
         self.manual_flg = False
 
@@ -247,7 +271,11 @@ class cryobox:
     def cts_init_setup(self):
         while True:
             try:
-                portnos = get_serial_ports()
+                # If port is hardcoded, skip scan and use it directly
+                if CTS_PORT:
+                    portnos = [CTS_PORT]
+                else:
+                    portnos = get_serial_ports()
                 print (portnos)
             except Exception as e:
                 print (f"Can't locate CTS COM port, please contact tech coordiantor: {e}")
