@@ -1420,6 +1420,7 @@ if 2 in state_list:
         psu_temp = rigol.PowerSupplyController()
         psu_temp.output_off(1)
         psu_temp.output_off(2)
+        psu_temp.close()
         print_status('success', "WIB_12V power supply is OFF")
     except Exception as e:
         print_status('warning', f"Could not control power supply automatically: {e}")
@@ -1511,6 +1512,7 @@ else:
         psu_temp = rigol.PowerSupplyController()
         psu_temp.output_off(1)
         psu_temp.output_off(2)
+        psu_temp.close()
         print_status('success', "WIB_12V power supply is OFF")
     except Exception as e:
         print_status('warning', f"Could not control power supply automatically: {e}")
@@ -1570,7 +1572,10 @@ if 'cts_ready_time' in locals() and cts_ready_time is not None:
                 break
     print_separator()
 if any(x in state_list for x in [3, 4, 5]):
-    psu = rigol.PowerSupplyController()
+    psu = rigol.PowerSupplyController(email_info={
+        'sender': sender, 'password': password,
+        'receiver': receiver, 'test_site': pre_info.get('test_site', 'CTS')
+    })
 if 3 in state_list:
     inform = cts.read_csv_to_dict(csv_file_implement, 'RT')
     while True:

@@ -39,8 +39,16 @@ class RigolDP800:
             raise
 
     def _release_usb_device(self):
+        # Detaching kernel drivers is only needed on Linux (the usbtmc driver
+        # holds the interface and must be released before libusb can claim it).
+        # On Windows, pyvisa-py uses WinUSB/libusb directly — calling
+        # is_kernel_driver_active() or dev.reset() raises Errno 13 and can
+        # leave the device unavailable, so skip entirely.
+        import platform
+        if platform.system() == "Windows":
+            return
+
         try:
-            # Rigol DP800的USB VID:PID
             RIGOL_VID = 0x1AB1
             RIGOL_PID = 0x0E11
 
@@ -127,6 +135,8 @@ class RigolDP800:
         self.turn_off_all()
         self.inst.close()
         self.rm.close()
+        # Give libusb time to fully release the interface before next open
+        time.sleep(1)
         print("🔌 Connection closed.")
 
 
@@ -218,7 +228,7 @@ class PowerSupplyController:
     based on configuration in init_setup.csv.
     """
 
-    def __init__(self):
+    def __init__(self, email_info=None):
         # Read configuration
         ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
         technician_csv = os.path.join(ROOT_DIR, "../init_setup.csv")
@@ -239,11 +249,52 @@ class PowerSupplyController:
             self._psu = ManualPowerSupply()
         else:
             print("[CONFIG] Power supply mode: USB")
-            # Use existing RigolDP800 class
             resource = csv_data.get('Rigol_PS_ID', '')
-            self._psu = RigolDP800(resource=resource)
+            self._psu = self._connect_with_retry(resource, email_info)
 
         self._mode = mode
+
+    def _connect_with_retry(self, resource, email_info, max_attempts=5, delay=10):
+        """Try to connect to RigolDP800, retry up to max_attempts times."""
+        for attempt in range(1, max_attempts + 1):
+            try:
+                psu = RigolDP800(resource=resource)
+                return psu
+            except Exception as e:
+                print(f"  PSU connection attempt {attempt}/{max_attempts} failed: {e}")
+                if attempt < max_attempts:
+                    print(f"  Retrying in {delay} s...")
+                    time.sleep(delay)
+
+        # All attempts failed
+        print(f"\n❌ Power supply connection failed after {max_attempts} attempts.")
+
+        # Send email notification
+        if email_info:
+            try:
+                import sys, os
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                import send_email as _send_email
+                _send_email.send_email(
+                    email_info['sender'],
+                    email_info['password'],
+                    email_info['receiver'],
+                    f"PSU Connection FAILED - {email_info.get('test_site', 'CTS')}",
+                    f"Rigol DP800 connection failed after {max_attempts} auto-retry attempts.\n"
+                    f"Resource: {resource}\nManual intervention required."
+                )
+                print("📧 Failure notification email sent.")
+            except Exception as mail_err:
+                print(f"⚠️  Failed to send email: {mail_err}")
+
+        # Prompt tester
+        while True:
+            yorn = input("Switch to MANUAL power supply mode? (y/n): ").strip().lower()
+            if yorn == 'y':
+                print("[CONFIG] Switching to MANUAL power supply mode.")
+                return ManualPowerSupply()
+            elif yorn == 'n':
+                raise RuntimeError("Power supply unavailable and manual mode declined.")
 
     # Delegate all methods to underlying implementation
     def set_voltage(self, ch, voltage):
