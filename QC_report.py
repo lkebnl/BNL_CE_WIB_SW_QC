@@ -11,7 +11,7 @@ from QC_tools import ana_tools
 import QC_check
 from fpdf import FPDF
 import argparse
-import Path as newpath
+# import Path as newpath
 import components.item_report as item_report
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas

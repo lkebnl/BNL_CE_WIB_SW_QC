@@ -337,7 +337,7 @@ def real_time_monitor():
                 slot = n
                 item = t_num
                 if platform.system() == "Windows":
-                    command = ["python3", "QC_report_all.py", path, "-n", slot, "-t", item]
+                    command = ["python", "QC_report_all.py", path, "-n", slot, "-t", item]
                 else:
                     command = ["python3 QC_report_all.py" + " " + path + " " + "-n " + slot + " -t " + item]
                 # command.extend(map(str, n))  # Convert integers to strings

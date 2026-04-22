@@ -63,7 +63,13 @@ def print_status(status_type, message):
 
 _VALID_FEMB_BOARDS = [
     'IO-1865-1J', 'IO-1865-1K', 'IO-1865-1L', 'IO-1865-1G',
-    'IO-1865-1D', 'IO-1865-1E', 'IO-1826-1L', 'IO-1865-1H',
+    'IO-1826-1J', 'IO-1826-1K', 'IO-1865-1L', 'IO-1826-1G',
+    'IO-1865-1D', 'IO-1865-1E', 'IO-1865-1I', 'IO-1865-1H',
+    'IO-1826-1D', 'IO-1826-1E', 'IO-1826-1I', 'IO-1826-1H',
+    'IO-1865-1M', 'IO-1865-1N', 'IO-1865-1O', 'IO-1865-1P',
+    'IO-1826-1M', 'IO-1826-1N', 'IO-1826-1O', 'IO-1826-1P',
+    'IO-1865-1Q', 'IO-1865-1R', 'IO-1865-1S', 'IO-1865-1T',
+    'IO-1826-1Q', 'IO-1826-1R', 'IO-1826-1S', 'IO-1826-1T',
 ]
 
 def is_valid_femb_id(femb_id):
