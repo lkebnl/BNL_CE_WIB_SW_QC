@@ -478,7 +478,16 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
         for _attempt in range(3):
             ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
             print("PC Time: ", ts)
-            command = sshcmd + ["root@192.168.121.123", f"date -s '{ts}' && hwclock -w"]
+            command = [
+                "ssh",
+                "-n",  # 🔥 关键：不等输入
+                "-T",  # 🔥 不要 tty
+                "-o", "BatchMode=yes",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "ConnectTimeout=10",
+                "root@192.168.121.123",
+                f'date -s "{ts}" && date'
+            ]
             result = subrun(command, timeout=30, shell=False)
             time.sleep(0.01)
             if result != None:
