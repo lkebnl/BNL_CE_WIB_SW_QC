@@ -177,7 +177,7 @@ def _subrun_linux(command, timeout=30, check=True, out=True, exitflg=True, user_
                                     capture_output=check,
                                     text=True,
                                     timeout=timeout,
-                                    shell=shell,
+                                    shell=True,
                                     # stdout=subprocess.PIPE,
                                     # stderr=subprocess.PIPE,
                                     check=check
@@ -203,7 +203,7 @@ def _subrun_linux(command, timeout=30, check=True, out=True, exitflg=True, user_
                                     capture_output=check,
                                     text=True,
                                     timeout=timeout,
-                                    shell=shell,
+                                    shell=True,                 # important
                                     stdout=subprocess.DEVNULL,  # discard stdout
                                     stderr=subprocess.DEVNULL,
                                     check=check
@@ -1215,7 +1215,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
             if platform.system() == "Windows":
                 command = ["scp", "-r", src, dst]
             else:
-                command = ["scp -r " + src + " " + dst]
+                command = [f"scp -r {src} {dst}"]
             result = subrun(command, timeout=Config.SCP_TIMEOUT, check=False, out=False)
             time.sleep(0.01)
             return result is not None

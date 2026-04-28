@@ -1,7 +1,7 @@
 ﻿karTest_Site,BNL_CTS_01
 Tech_site_email,lke@bnl.gov
 Tech_Coordinator,LKE
-QC_data_root_folder,C:/data
+QC_data_root_folder,/home/ke/data
 Rigol_PS_for_WIB,True
 Rigol_PS_ID,USB0::0x1AB1::0x0E11::DP8C184450708::INSTR
 PS_Control_Mode,USB

@@ -2,10 +2,12 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/Python-3.12.3/Lib" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Python-3.12.3/build/lib.linux-x86_64-3.12" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="femb_env" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (BNL_CE_WIB_SW_QC) (2)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">
