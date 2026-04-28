@@ -25,7 +25,7 @@ import webbrowser
 
 # Import QC modules - Custom utility modules
 from qc_utils import timer_count, countdown_timer, check_fault_files, QC_Process, close_terminal, check_checkout_result, save_qc_paths
-from qc_power import safe_power_off
+from qc_power import safe_power_off, ManualPowerSupply
 from qc_ui import confirm_function, get_email, get_cebox_image
 from qc_results import handle_qc_results, display_qc_results, analyze_test_results
 
@@ -416,6 +416,8 @@ lqdata_path = None
 lqreport_path = None
 fcdata_path = None
 fcreport_path = None
+ps_manual_mode = False   # default; overridden after config is loaded
+cts_manual_mode = False  # default; overridden after config is loaded
 colorama.init()
 print(ROOT_DIR)
 technician_csv = os.path.join(ROOT_DIR, "init_setup.csv")
@@ -543,24 +545,49 @@ if not is_2nd_ce_box:
         cts_ln2_fill_wait = 1800
         cts_warmup_wait = 3600
         print(Fore.YELLOW + "⚠ Invalid CTS wait time values in config, using defaults" + Style.RESET_ALL)
+    ps_manual_mode = cts_config.get('PS_Mode', 'auto').strip().lower() == 'manual'
+    if ps_manual_mode:
+        print_status('info', "Power supply mode: MANUAL (operator will control power supply manually)")
+    else:
+        print_status('info', "Power supply mode: AUTO (Rigol power supply controller)")
+    cts_manual_mode = cts_config.get('CTS_Mode', 'auto').strip().lower() == 'manual'
+    if cts_manual_mode:
+        print_status('info', "CTS UART mode: MANUAL (operator will control CTS manually)")
+    else:
+        print_status('info', "CTS UART mode: AUTO (cts_cryo_uart controller)")
     print(Fore.CYAN + "\n" + "=" * 70)
     print("  CTS CRYOGENIC SYSTEM INITIALIZATION")
     print("=" * 70 + Style.RESET_ALL)
 
-    cryo = cts_cryo_uart.cryobox()
-    cryo_initialized = cryo.cts_init_setup()
-
-    if cryo_initialized:
-        print_status('success', "CTS cryogenic box connected via USB - automatic control enabled")
-        cryo_auto_mode = True
+    if cts_manual_mode:
+        cryo = None
+        cryo_auto_mode = False
+        print_status('info', "Manual mode: operator will control CTS cryogenic system")
     else:
-        if cryo.manual_flg:
-            print_status('warning', "CTS cryogenic box not found - manual control mode")
-            print(Fore.YELLOW + "  You will be prompted to control the cryogenic system manually" + Style.RESET_ALL)
-            cryo_auto_mode = False
-        else:
-            print_status('error', "CTS initialization failed")
-            cryo_auto_mode = False
+        cryo = cts_cryo_uart.cryobox()
+        _cryo_connected = False
+        while not _cryo_connected:
+            cryo_initialized = cryo.cts_init_setup()
+            if cryo_initialized:
+                cryo_auto_mode = True
+                _cryo_connected = True
+                print_status('success', "CTS cryogenic box connected via USB - automatic control enabled")
+            else:
+                if cryo.manual_flg:
+                    print_status('warning', "CTS cryogenic box not found")
+                else:
+                    print_status('error', "CTS initialization failed")
+                print(Fore.YELLOW + "\nOptions:" + Style.RESET_ALL)
+                print("  M - Switch to manual mode (operator controls CTS)")
+                print("  R - Retry connection")
+                _cryo_choice = input(Fore.YELLOW + "Enter choice (M/R) >> " + Style.RESET_ALL).strip().upper()
+                if _cryo_choice == 'M':
+                    cts_manual_mode = True
+                    cryo_auto_mode = False
+                    _cryo_connected = True
+                    print_status('info', "Switched to MANUAL CTS mode - operator will control CTS manually")
+                else:
+                    print_status('info', "Retrying CTS connection...")
 
     print(Fore.CYAN + "=" * 70 + Style.RESET_ALL + "\n")
 
@@ -1249,26 +1276,51 @@ if is_2nd_ce_box:
         cts_ln2_fill_wait = 1800
         cts_warmup_wait = 3600
         print(Fore.YELLOW + "⚠ Invalid CTS wait time values in config, using defaults" + Style.RESET_ALL)
+    ps_manual_mode = cts_config.get('PS_Mode', 'auto').strip().lower() == 'manual'
+    if ps_manual_mode:
+        print_status('info', "Power supply mode: MANUAL (operator will control power supply manually)")
+    else:
+        print_status('info', "Power supply mode: AUTO (Rigol power supply controller)")
+    cts_manual_mode = cts_config.get('CTS_Mode', 'auto').strip().lower() == 'manual'
+    if cts_manual_mode:
+        print_status('info', "CTS UART mode: MANUAL (operator will control CTS manually)")
+    else:
+        print_status('info', "CTS UART mode: AUTO (cts_cryo_uart controller)")
 
     ## Initialize CTS cryogenic control box
     print(Fore.CYAN + "\n" + "=" * 70)
     print("  CTS CRYOGENIC SYSTEM INITIALIZATION")
     print("=" * 70 + Style.RESET_ALL)
 
-    cryo = cts_cryo_uart.cryobox()
-    cryo_initialized = cryo.cts_init_setup()
-
-    if cryo_initialized:
-        print_status('success', "CTS cryogenic box connected via USB - automatic control enabled")
-        cryo_auto_mode = True
+    if cts_manual_mode:
+        cryo = None
+        cryo_auto_mode = False
+        print_status('info', "Manual mode: operator will control CTS cryogenic system")
     else:
-        if cryo.manual_flg:
-            print_status('warning', "CTS cryogenic box not found - manual control mode")
-            print(Fore.YELLOW + "  You will be prompted to control the cryogenic system manually" + Style.RESET_ALL)
-            cryo_auto_mode = False
-        else:
-            print_status('error', "CTS initialization failed")
-            cryo_auto_mode = False
+        cryo = cts_cryo_uart.cryobox()
+        _cryo_connected = False
+        while not _cryo_connected:
+            cryo_initialized = cryo.cts_init_setup()
+            if cryo_initialized:
+                cryo_auto_mode = True
+                _cryo_connected = True
+                print_status('success', "CTS cryogenic box connected via USB - automatic control enabled")
+            else:
+                if cryo.manual_flg:
+                    print_status('warning', "CTS cryogenic box not found")
+                else:
+                    print_status('error', "CTS initialization failed")
+                print(Fore.YELLOW + "\nOptions:" + Style.RESET_ALL)
+                print("  M - Switch to manual mode (operator controls CTS)")
+                print("  R - Retry connection")
+                _cryo_choice = input(Fore.YELLOW + "Enter choice (M/R) >> " + Style.RESET_ALL).strip().upper()
+                if _cryo_choice == 'M':
+                    cts_manual_mode = True
+                    cryo_auto_mode = False
+                    _cryo_connected = True
+                    print_status('info', "Switched to MANUAL CTS mode - operator will control CTS manually")
+                else:
+                    print_status('info', "Retrying CTS connection...")
 
     print(Fore.CYAN + "=" * 70 + Style.RESET_ALL + "\n")
 
@@ -1434,17 +1486,23 @@ if 2 in state_list:
     else:
         print_status('info', "Manual mode - please ensure CTS is in IDLE state")
 
-    ### Step 2: Turn off WIB power supply automatically
+    ### Step 2: Turn off WIB power supply
     print_step("Turning OFF WIB power supply", 2, 3)
-    try:
-        psu_temp = rigol.PowerSupplyController()
-        psu_temp.output_off(1)
-        psu_temp.output_off(2)
-        psu_temp.close()
-        print_status('success', "WIB_12V power supply is OFF")
-    except Exception as e:
-        print_status('warning', f"Could not control power supply automatically: {e}")
-        print_status('info', "Please ensure WIB power supply is OFF manually")
+    if ps_manual_mode:
+        print_status('warning', "MANUAL: Please turn OFF the WIB 12V power supply and check the current is zero")
+        confirm_function("Confirm 12V power supply is OFF and current is zero")
+        print_status('success', "12V power supply OFF confirmed (manual)")
+    else:
+        try:
+            psu_temp = rigol.PowerSupplyController()
+            psu_temp.output_off(1)
+            psu_temp.output_off(2)
+            psu_temp.close()
+            print_status('success', "WIB_12V power supply is OFF")
+        except Exception as e:
+            print_status('warning', f"Could not control power supply automatically: {e}")
+            print_status('info', "Please ensure WIB power supply is OFF manually")
+            confirm_function("Confirm WIB power supply is OFF")
 
     ### Step 3: User confirmation
     print_step("Safety confirmation", 3, 3)
@@ -1528,15 +1586,21 @@ else:
 
     ### Turn off WIB power supply (even if Phase 2 skipped)
     print_status('info', "Turning OFF WIB power supply...")
-    try:
-        psu_temp = rigol.PowerSupplyController()
-        psu_temp.output_off(1)
-        psu_temp.output_off(2)
-        psu_temp.close()
-        print_status('success', "WIB_12V power supply is OFF")
-    except Exception as e:
-        print_status('warning', f"Could not control power supply automatically: {e}")
-        print_status('info', "Please ensure WIB power supply is OFF manually")
+    if ps_manual_mode:
+        print_status('warning', "MANUAL: Please turn OFF the WIB 12V power supply and check the current is zero")
+        confirm_function("Confirm 12V power supply is OFF and current is zero")
+        print_status('success', "12V power supply OFF confirmed (manual)")
+    else:
+        try:
+            psu_temp = rigol.PowerSupplyController()
+            psu_temp.output_off(1)
+            psu_temp.output_off(2)
+            psu_temp.close()
+            print_status('success', "WIB_12V power supply is OFF")
+        except Exception as e:
+            print_status('warning', f"Could not control power supply automatically: {e}")
+            print_status('info', "Please ensure WIB power supply is OFF manually")
+            confirm_function("Confirm WIB power supply is OFF")
 
     ### 23. Load configuration directly (if Phase 2 skipped)
     print()
@@ -1592,10 +1656,32 @@ if 'cts_ready_time' in locals() and cts_ready_time is not None:
                 break
     print_separator()
 if any(x in state_list for x in [3, 4, 5]):
-    psu = rigol.PowerSupplyController(email_info={
-        'sender': sender, 'password': password,
-        'receiver': receiver, 'test_site': pre_info.get('test_site', 'CTS')
-    })
+    if ps_manual_mode:
+        psu = ManualPowerSupply()
+        print_status('info', "Power supply: MANUAL mode - operator will control power supply")
+    else:
+        _psu_connected = False
+        while not _psu_connected:
+            try:
+                psu = rigol.PowerSupplyController(email_info={
+                    'sender': sender, 'password': password,
+                    'receiver': receiver, 'test_site': pre_info.get('test_site', 'CTS')
+                })
+                _psu_connected = True
+                print_status('success', "Power supply controller connected (auto mode)")
+            except Exception as _psu_err:
+                print_status('error', f"Failed to connect to power supply: {_psu_err}")
+                print(Fore.YELLOW + "\nOptions:" + Style.RESET_ALL)
+                print("  M - Switch to manual mode (operator controls power supply)")
+                print("  R - Retry auto connection")
+                _psu_choice = input(Fore.YELLOW + "Enter choice (M/R) >> " + Style.RESET_ALL).strip().upper()
+                if _psu_choice == 'M':
+                    ps_manual_mode = True
+                    psu = ManualPowerSupply()
+                    print_status('info', "Switched to MANUAL power supply mode")
+                    _psu_connected = True
+                else:
+                    print_status('info', "Retrying power supply connection...")
 if 3 in state_list:
     inform = cts.read_csv_to_dict(csv_file_implement, 'RT')
     while True:
