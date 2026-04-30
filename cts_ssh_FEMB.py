@@ -357,6 +357,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
                     return 'retry'
             elif choice == 'e':
                 if confirm_user_action("exit"):
+                    print('exit the test')
                     return 'exit'
             else:
                 print("Invalid input. Please enter 'r' or 'e'")
@@ -907,6 +908,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
                         # User chose to exit, only power off FEMB
                         power_off_femb_channels()
                         print(Fore.YELLOW + "User exited. FEMB powered off." + Style.RESET_ALL)
+                        sys.exit()
                         return None
 
                 # ========== Step 2: Cable Test (slot by slot) ==========
@@ -933,6 +935,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
                             # User chose to exit, only power off FEMB
                             power_off_femb_channels()
                             print(Fore.YELLOW + "User exited. FEMB powered off." + Style.RESET_ALL)
+                            sys.exit()
                             return None
                     else:
                         # Cold mode: handle based on number of failures
@@ -1074,6 +1077,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
                     # User chose to exit, only power off FEMB
                     power_off_femb_channels()
                     print(Fore.YELLOW + "User exited. FEMB powered off." + Style.RESET_ALL)
+                    sys.exit()
                     return CheckoutResult(False, "User cancelled")
 
         def _execute_checkout(self):

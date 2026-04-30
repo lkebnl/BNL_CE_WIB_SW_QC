@@ -1,15 +1,19 @@
 ﻿karTest_Site,BNL_CTS_01
 Tech_site_email,lke@bnl.gov
 Tech_Coordinator,LKE
-QC_data_root_folder,/home/ke/data
+QC_data_root_folder,/mnt/data/
 Rigol_PS_for_WIB,True
-Rigol_PS_ID,USB0::0x1AB1::0x0E11::DP8C184450708::INSTR
+Rigol_PS_ID,USB0::0x1AB1::0x0E11::DP8C184550857::INSTR
 PS_Control_Mode,USB
-PS_Mode,auto
-CTS_Mode,auto
+PS_Mode,manual
+CTS_Mode,manual
 CTS_LN2_AM,1800
 CTS_LN2_PM,1200
 CTS_LN2_Fill_Wait,1800
 CTS_Warmup_Wait,3600
-Network_Upload_Path,C:/data/rtss/femb
+Network_Upload_Path,/data/rtss/femb/
 email_receiver,lke@bnl.gov
+toy_TPC,y
+Email_Sender,bnlr216@gmail.com
+Email_Password,vvef tosp minf wwhf
+Shifter_Log_URL,https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2

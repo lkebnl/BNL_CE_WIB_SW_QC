@@ -15,24 +15,23 @@ from qc_results import analyze_test_results, generate_qc_summary
 
 # common use the top_path
 csv_data = {}
-csv_file = 'init_setup.csv'
-file_path = r'init_setup.csv'
+csv_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'init_setup.csv')
 with open(csv_file, mode='r', newline='', encoding='utf-8-sig') as file:
     reader = csv.reader(file)
     for row in reader:
         if len(row) == 2:
             key, value = row
             csv_data[key.strip()] = value.strip()
-main_dict.top_path = csv_data['QC_data_root_folder']
+main_dict.top_path = csv_data.get('QC_data_root_folder', os.path.expanduser('~') + '/')
 top_path = main_dict.top_path
-print(top_path)
+# print(top_path)
 target_folder = top_path + '/FEMB_QC/Data'
 last_scan_file = top_path + '/FEMB_QC/Data/last_scan_results.txt'
 network_path = csv_data.get('Network_Upload_Path', '/data/rtss/femb')
 
 # Email configuration from init_setup
-sender = csv_data.get('email_sender', 'bnlr216@gmail.com')
-password = csv_data.get('email_password', 'vvef tosp minf wwhf')
+sender = csv_data.get('Email_Sender', 'bnlr216@gmail.com')
+password = csv_data.get('Email_Password', 'vvef tosp minf wwhf')
 
 def get_current_email_receiver():
     """
@@ -122,14 +121,14 @@ def copy_file_to_network(file_path):
         print(f"  Network copy failed for {file_path}: {e}")
 
 def save_last_scan_results(results):
-    with open(last_scan_file, 'w') as f:
+    with open(last_scan_file, 'w', encoding='utf-8') as f:
         for file_path in results:
             f.write(file_path + '\n')
 
 def load_last_scan_results():
     results = set()
     if os.path.exists(last_scan_file):
-        with open(last_scan_file, 'r') as f:
+        with open(last_scan_file, 'r', encoding='utf-8') as f:
             for line in f:
                 results.add(line.strip())
     return results
@@ -181,9 +180,8 @@ def process_qc_summary_after_t16(report_path):
         print(f"\n{'='*70}")
         print(f"  QC Test Item 16 Completed - Preparing Summary")
         print(f"{'='*70}")
-        print(f"  Waiting 500 seconds for all reports to complete...")
+        print(f"  Waiting 100 seconds for all reports to complete...")
 
-        # Wait 500 seconds for reports to complete
         time.sleep(100)
 
         print(f"  Analyzing QC results...")
@@ -264,8 +262,8 @@ Detailed summary is attached.
             email_body += "\nDetailed summary is attached.\n"
 
         # Send email with attachment
-        # Get current receiver from config (may have been updated by CTS_FEMB_QC_top.py)
-        current_receiver = 'lke@bnl.gov'
+        # Re-read receiver from config in case CTS_FEMB_QC_top.py updated it
+        current_receiver = get_current_email_receiver()
         try:
             send_email.send_email_with_attachment(
                 sender, password, current_receiver,
@@ -330,10 +328,24 @@ def real_time_monitor():
             t_char = file_path[-7:]
             t_num = ''.join([char for char in t_char if char.isdigit()])
             if '_t' in file_path[-9:]:
-                if '_t6' in file_path[-9:]:
-                    time.sleep(c*30)  # the time is used to copy the whole .bin file
-                else:
-                    time.sleep(c*12)  # the time is used to copy the whole .bin file
+                _max_wait = max(c * 30 if '_t6' in file_path[-9:] else c * 15, 15)
+                _stable_count = 0
+                _prev_size = -1
+                _waited = 0
+                while _waited < _max_wait:
+                    try:
+                        _curr_size = os.path.getsize(file_path)
+                    except OSError:
+                        _curr_size = -1
+                    if _curr_size > 0 and _curr_size == _prev_size:
+                        _stable_count += 1
+                        if _stable_count >= 3:
+                            break
+                    else:
+                        _stable_count = 0
+                    _prev_size = _curr_size
+                    time.sleep(1)
+                    _waited += 1
                 slot = n
                 item = t_num
                 if platform.system() == "Windows":
@@ -354,8 +366,8 @@ def real_time_monitor():
                         if line.startswith('REPORT_PATH_OUTPUT='):
                             print(line)
                             print(line.split('=', 1))
-                            print(line.startswith('REPORT_PATH_OUTPUT='))
-                            print(report_dir)
+                            # print(line.startswith('REPORT_PATH_OUTPUT='))
+                            # print(report_dir)
                             report_dir = line.split('=', 1)[1].strip()
                             print(f"  Parsed report_dir from QC_report_all.py: {report_dir}")
                             break
@@ -370,8 +382,8 @@ def real_time_monitor():
                 qc_report_path = top_path + '/FEMB_QC/Report/' + path.split("/")[-3] + '/' + path.split("/")[-2] + '/'
                 targets = ["_t16_", "_t15_", "_t14_", "_t13_"]
 
-                print(targets)
-                print(qc_report_path)
+                # print(targets)
+                # print(qc_report_path)
 
                 exists = {
                              t
@@ -405,11 +417,9 @@ if not os.path.exists(directory_Data_path):
 else:
     print(f"Directory '{directory_Data_path}' already exists. ")
 
+logging.basicConfig(filename='{}FEMB_QC/Data/QC.log'.format(top_path),
+                    level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.info('info: %s', logs)
 
 real_time_monitor()
-
-if True:
-    logging.basicConfig(filename='{}FEMB_QC/Data/QC.log'.format(top_path),
-                        level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.info('info: %s', logs)

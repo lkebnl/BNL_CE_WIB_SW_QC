@@ -20,6 +20,7 @@ from datetime import datetime
 import os
 import time
 import sys
+import subprocess
 import threading
 import webbrowser
 
@@ -402,10 +403,6 @@ script = "CTS_Real_Time_Monitor.py"
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 MAIN_SCRIPT = os.path.basename(os.path.abspath(__file__))
 
-sender = "bnlr216@gmail.com"
-password = "vvef tosp minf wwhf"
-receiver = "lke@bnl.gov"
-
 wcdata_path = None
 wcreport_path = None
 wqdata_path = None
@@ -488,9 +485,24 @@ time.sleep(1)
 # os.system(f'gnome-terminal --title="CTS Monitor" --hide-menubar --geometry=15x5-0-0 --working-directory="{current_dir}" -- bash -c "python3 {script}; exec bash" &')
 # print(f"✓ check CTS Monitor Launched" + Fore.GREEN + "(A terminal for real time analysis is launched, please minimize it.)" + Style.RESET_ALL)
 
+cts_config = {}
+try:
+    with open(technician_csv, mode='r', newline='', encoding='utf-8-sig') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if len(row) == 2:
+                key, value = row
+                cts_config[key.strip()] = value.strip()
+except Exception as e:
+    print(Fore.YELLOW + f"⚠ Warning: Could not load CTS configuration: {e}" + Style.RESET_ALL)
+
+sender = cts_config.get('Email_Sender', 'bnlr216@gmail.com')
+password = cts_config.get('Email_Password', 'vvef tosp minf wwhf')
+receiver = cts_config.get('email_receiver', 'lke@bnl.gov')
+
 update_email_receiver_in_config(receiver)
-confirm_function("Please confirm the CTS Monitor is Open")
-shifter_log_url = "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2"
+confirm_function("Please confirm that the TERMINAL 'CTS Monitor' has been launched")
+shifter_log_url = cts_config.get('Shifter_Log_URL', "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2")
 print(f"Please open shifter log link in Chrome: {shifter_log_url}")
 try:
     chrome_path = webbrowser.get('google-chrome')
@@ -527,17 +539,8 @@ if not is_2nd_ce_box:
         title="CTS setup Initial Check",
         image_path=os.path.join(ROOT_DIR, "GUI", "output_pngs", "6.png")
     )
+
 if not is_2nd_ce_box:
-    cts_config = {}
-    try:
-        with open(technician_csv, mode='r', newline='', encoding='utf-8-sig') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                if len(row) == 2:
-                    key, value = row
-                    cts_config[key.strip()] = value.strip()
-    except Exception as e:
-        print(Fore.YELLOW + f"⚠ Warning: Could not load CTS configuration: {e}" + Style.RESET_ALL)
     try:
         cts_ln2_fill_wait = int(cts_config.get('CTS_LN2_Fill_Wait', 1800))  # Default 30 min
         cts_warmup_wait = int(cts_config.get('CTS_Warmup_Wait', 3600))     # Default 60 min
@@ -1171,12 +1174,17 @@ if 1 in state_list:
         f"Top_FEMB={femb_id_1}"
     )
     if 'top_path' not in csv_data:
-        csv_data['top_path'] = 'D:'
+        csv_data['top_path'] = csv_data.get('QC_data_root_folder', os.path.expanduser("~") + "/")
 
+    _femb_info_keys = {
+        'tester', 'SLOT0', 'SLOT1', 'SLOT2', 'SLOT3',
+        'test_site', 'comment', 'top_path', 'QC_data_root_folder', 'toy_TPC'
+    }
     with open(csv_file, mode="w", newline="", encoding='utf-8-sig') as file:
         writer = csv.writer(file)
         for key, value in csv_data.items():
-            writer.writerow([key, value])
+            if key in _femb_info_keys:
+                writer.writerow([key, value])
 
     #### 17. Read configuration to dictionary
     inform = cts.read_csv_to_dict(csv_file, 'RT')
@@ -1541,8 +1549,8 @@ if 2 in state_list:
     )
 
     ### 22. Copy configuration file to implementation file
-    with open(csv_file, 'r') as source:
-        with open(csv_file_implement, 'w') as destination:
+    with open(csv_file, 'r', encoding='utf-8-sig') as source:
+        with open(csv_file_implement, 'w', encoding='utf-8-sig') as destination:
             destination.write(source.read())
 
     ### 22a. Send email notification - Assembly Complete
@@ -1612,7 +1620,7 @@ else:
         print("Enter " + Fore.GREEN + "'confirm'" + Style.RESET_ALL + " if info is correct")
         phase_2_2 = input(Fore.YELLOW + '>> ' + Style.RESET_ALL)
         if phase_2_2 == 'm':
-            os.system(f'gedit "{csv_file_implement}"')
+            subprocess.Popen(['gedit', csv_file_implement])
             inform = cts.read_csv_to_dict(csv_file_implement, 'RT', True)
         elif phase_2_2 == 'confirm':
             inform = cts.read_csv_to_dict(csv_file_implement, 'RT')
@@ -2168,34 +2176,9 @@ if 4 in state_list and not goto_disassembly:
 
     # Cold QC Action Selection
     while True:
-        # print("\n" + Fore.CYAN + "=" * 70)
-        # print("  OPTIONS:")
-        # print("=" * 70 + Style.RESET_ALL)
-        # print("  " + Fore.GREEN + "'y'" + Style.RESET_ALL + " - Start Cold QC")
-        # print("  " + Fore.YELLOW + "'s'" + Style.RESET_ALL + " - Skip Cold QC")
-        # print("  " + Fore.RED + "'e'" + Style.RESET_ALL + " - Exit test program")
-        # Next = input(Fore.YELLOW + '>> ' + Style.RESET_ALL)
-        #
-        # # Skip Cold QC
-        # if Next == 's':
-        #     if confirm_function("Do you want to skip Cold QC?"):
-        #         print(Fore.YELLOW + "⏩ Skipping Cold QC..." + Style.RESET_ALL)
-        #         break
-        #
-        # # Exit Test and go to warm-up + disassembly
-        # elif Next == 'e':
-        #     if confirm_function("Do you want to skip Cold QC and proceed to warm-up + disassembly?"):
-        #         print(Fore.YELLOW + "Skipping Cold QC, will proceed to warm-up then disassembly..." + Style.RESET_ALL)
-        #         goto_disassembly = True
-        #         break
-        #
-        # # Start Cold QC
-        # elif Next == 'y':
         if True:
-            # if confirm_function("Do you want to begin Cold QC?"):
             if True:
                 print_separator()
-
                 # Power ON WIB
                 print_step("Powering ON WIB", 1, 4)
                 psu.set_channel(1, 12.0, 3.0, on=True)
@@ -2653,7 +2636,11 @@ if 5 in state_list and not goto_disassembly:
                     # Generate comprehensive summary
                     overall_result = analyze_test_results(all_test_paths, inform, time_limit_hours=None)
                     summary_filename = f"Overall_QC_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                    summary_path = os.path.join(inform['QC_data_root_folder'], summary_filename)
+                    _summary_dir = inform['QC_data_root_folder']
+                    if not os.path.isdir(_summary_dir):
+                        print_status('warning', f"Data folder not found, saving summary to current dir: {_summary_dir}")
+                        _summary_dir = ROOT_DIR
+                    summary_path = os.path.join(_summary_dir, summary_filename)
                     generate_qc_summary("Overall QC Test", inform, overall_result, summary_path)
 
                     # Determine overall pass/fail
