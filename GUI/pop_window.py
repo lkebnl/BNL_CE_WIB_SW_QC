@@ -338,33 +338,6 @@ def show_disassembly_validation_popup(
     )
     submit_btn.pack(side='right', padx=(0, pad_large * 2), pady=pad_medium)
 
-    # === TOP: Image display ===
-    if image_path:
-        try:
-            img = Image.open(image_path)
-
-            # Scale image to fit upper portion - use less height on smaller screens
-            img_ratio = img.height / img.width
-            # Allocate less space for image on smaller screens
-            img_height_ratio = 0.45 if screen_height < 900 else 0.55 if screen_height < 1200 else 0.65
-            target_height = int(screen_height * img_height_ratio)
-            target_width = int(target_height / img_ratio)
-
-            # Limit width
-            max_img_width = screen_width - pad_large * 4
-            if target_width > max_img_width:
-                target_width = max_img_width
-                target_height = int(target_width * img_ratio)
-
-            img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
-            photo = ImageTk.PhotoImage(img)
-
-            image_label = tk.Label(main_frame, image=photo, bg='#2C3E50')
-            image_label.image = photo
-            image_label.pack(pady=(0, pad_small))
-        except Exception as e:
-            print(f"Error loading image: {e}")
-
     # === TEST RESULT BANNER ===
     result_frame = tk.Frame(main_frame, padx=pad_large, pady=max(8, int(15 * scale_factor)))
     if test_passed:
@@ -506,8 +479,349 @@ def show_disassembly_validation_popup(
         entry.bind('<KeyRelease>', handler)
         entry.bind('<FocusOut>', handler)
 
+    # Bind Return on each entry to advance focus to the next (scanner sends Enter after scan)
+    entry_order = [entries[key] for _, key, _ in id_fields]
+    for i, entry in enumerate(entry_order[:-1]):
+        next_entry = entry_order[i + 1]
+        entry.bind('<Return>', lambda _evt, ne=next_entry: ne.focus_set())
+
+    # === BOTTOM: Image display ===
+    if image_path:
+        try:
+            img = Image.open(image_path)
+
+            # Scale image to fit lower portion - use less height on smaller screens
+            img_ratio = img.height / img.width
+            img_height_ratio = 0.45 if screen_height < 900 else 0.55 if screen_height < 1200 else 0.65
+            target_height = int(screen_height * img_height_ratio)
+            target_width = int(target_height / img_ratio)
+
+            # Limit width
+            max_img_width = screen_width - pad_large * 4
+            if target_width > max_img_width:
+                target_width = max_img_width
+                target_height = int(target_width * img_ratio)
+
+            img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+
+            image_label = tk.Label(main_frame, image=photo, bg='#2C3E50')
+            image_label.image = photo
+            image_label.pack(pady=(0, pad_small))
+        except Exception as img_err:
+            print(f"Error loading image: {img_err}")
+
     # Focus on first entry
     entries['femb_sn'].focus_set()
 
     root.mainloop()
     return validation_results
+
+
+def show_assembly_scan_popup(
+    slot_name="BOTTOM",
+    image_path=None
+):
+    """
+    Combined pre-assembly popup: collects HWDB QR, CE Box SN, Cover Last 4,
+    and double-scanned FEMB ID with live validation in a single fullscreen form.
+    Returns dict: {'hwdb_qr', 'ce_box_sn', 'cover_last4', 'femb_id'}
+    """
+
+    _VALID_FEMB_BOARDS = [
+        'IO-1865-1J', 'IO-1865-1K', 'IO-1865-1L', 'IO-1865-1G',
+        'IO-1826-1J', 'IO-1826-1K', 'IO-1826-1G',
+        'IO-1865-1D', 'IO-1865-1E', 'IO-1865-1I', 'IO-1865-1H',
+        'IO-1826-1D', 'IO-1826-1E', 'IO-1826-1I', 'IO-1826-1H',
+        'IO-1865-1M', 'IO-1865-1N', 'IO-1865-1O', 'IO-1865-1P',
+        'IO-1826-1M', 'IO-1826-1N', 'IO-1826-1O', 'IO-1826-1P',
+        'IO-1865-1Q', 'IO-1865-1R', 'IO-1865-1S', 'IO-1865-1T',
+        'IO-1826-1Q', 'IO-1826-1R', 'IO-1826-1S', 'IO-1826-1T',
+    ]
+
+    def _is_valid_femb_id(femb_id):
+        normalized = femb_id.replace('0', 'O')
+        if 'BNL' not in normalized or 'FEMB' not in normalized:
+            return False
+        return any(board in normalized for board in _VALID_FEMB_BOARDS)
+
+    result = {'hwdb_qr': None, 'ce_box_sn': None, 'cover_last4': None, 'femb_id': None}
+    field_valid = {
+        'hwdb_qr': False, 'ce_box_sn': False,
+        'cover_last4': False, 'femb_id_1': False, 'femb_id_2': False
+    }
+
+    hints = {
+        'hwdb_qr':    "Must contain 'https://'",
+        'ce_box_sn':  "Must start with 'VD-' or 'HD-'",
+        'cover_last4':"Must be exactly 4 digits",
+        'femb_id_1':  "Must contain 'BNL', 'FEMB', and valid board type",
+        'femb_id_2':  "Must match scan 1 and be a valid FEMB ID",
+    }
+
+    entries = {}
+    status_labels = {}
+    hint_labels = {}
+
+    def exit_fullscreen(event=None):
+        root.attributes('-fullscreen', False)
+
+    def _set_status(key, state):
+        e = entries[key]
+        sl = status_labels[key]
+        hl = hint_labels[key]
+        if state == 'ok':
+            e.config(bg='#90EE90')
+            sl.config(text="✓", fg='#27AE60')
+            hl.config(text="")
+        elif state == 'mismatch':
+            e.config(bg='#FFB6C1')
+            sl.config(text="✗", fg='#E74C3C')
+            hl.config(text="Does not match scan 1!")
+        elif state == 'fail':
+            e.config(bg='#FFB6C1')
+            sl.config(text="✗", fg='#E74C3C')
+            hl.config(text=hints[key])
+        else:  # pending
+            e.config(bg='white')
+            sl.config(text="⏳", fg='white')
+            hl.config(text="")
+
+    def check_all_valid():
+        if all(field_valid.values()):
+            submit_btn.config(bg='#4CAF50', text="✓ Confirm & Continue")
+            error_label.config(text="")
+        else:
+            submit_btn.config(bg='#FF9800', text="Confirm & Continue")
+
+    def validate_hwdb_qr(event=None):
+        v = entries['hwdb_qr'].get().strip()
+        ok = bool(v) and 'https://' in v
+        field_valid['hwdb_qr'] = ok
+        _set_status('hwdb_qr', 'ok' if ok else ('fail' if v else 'pending'))
+        check_all_valid()
+
+    def validate_ce_box(event=None):
+        v = entries['ce_box_sn'].get().strip()
+        ok = v.startswith('VD-') or v.startswith('HD-')
+        field_valid['ce_box_sn'] = ok
+        _set_status('ce_box_sn', 'ok' if ok else ('fail' if v else 'pending'))
+        check_all_valid()
+
+    def validate_cover(event=None):
+        v = entries['cover_last4'].get().strip()
+        ok = len(v) == 4 and v.isdigit()
+        field_valid['cover_last4'] = ok
+        _set_status('cover_last4', 'ok' if ok else ('fail' if v else 'pending'))
+        check_all_valid()
+
+    def validate_femb1(event=None):
+        v = entries['femb_id_1'].get().strip()
+        ok = _is_valid_femb_id(v) if v else False
+        field_valid['femb_id_1'] = ok
+        _set_status('femb_id_1', 'ok' if ok else ('fail' if v else 'pending'))
+        validate_femb2()
+
+    def validate_femb2(event=None):
+        v1 = entries['femb_id_1'].get().strip()
+        v2 = entries['femb_id_2'].get().strip()
+        if not v2:
+            field_valid['femb_id_2'] = False
+            _set_status('femb_id_2', 'pending')
+        elif _is_valid_femb_id(v2) and v2 == v1:
+            field_valid['femb_id_2'] = True
+            _set_status('femb_id_2', 'ok')
+        elif _is_valid_femb_id(v2):
+            field_valid['femb_id_2'] = False
+            _set_status('femb_id_2', 'mismatch')
+        else:
+            field_valid['femb_id_2'] = False
+            _set_status('femb_id_2', 'fail')
+        check_all_valid()
+
+    def on_submit():
+        if all(field_valid.values()):
+            result['hwdb_qr']    = entries['hwdb_qr'].get().strip()
+            result['ce_box_sn']  = entries['ce_box_sn'].get().strip()
+            result['cover_last4']= entries['cover_last4'].get().strip()
+            result['femb_id']    = entries['femb_id_2'].get().strip()
+            root.destroy()
+        else:
+            error_label.config(text="⚠ All fields must be valid before continuing!", fg='#E74C3C')
+            for key in ['hwdb_qr', 'ce_box_sn', 'cover_last4', 'femb_id_1', 'femb_id_2']:
+                if not field_valid[key]:
+                    entries[key].focus_set()
+                    break
+
+    # === Initialize window ===
+    root = tk.Tk()
+    root.title(f"{slot_name} Slot - Pre-Assembly Scan")
+    root.attributes('-fullscreen', True)
+    root.bind("<Escape>", exit_fullscreen)
+    root.configure(bg='#2C3E50')
+
+    screen_width  = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    scale_factor  = min(screen_width / 1920, screen_height / 1080)
+
+    font_size_medium = max(12, int(14 * scale_factor))
+    font_size_large  = max(14, int(16 * scale_factor))
+    font_size_header = max(16, int(20 * scale_factor))
+    font_size_error  = max(11, int(14 * scale_factor))
+
+    col_label_width  = max(16, int(20 * scale_factor))
+    col_entry_width  = max(30, int(50 * scale_factor))
+    col_status_width = max(4,  int(6  * scale_factor))
+
+    pad_small  = max(3,  int(5  * scale_factor))
+    pad_medium = max(5,  int(10 * scale_factor))
+    pad_large  = max(10, int(20 * scale_factor))
+    row_pady   = max(4,  int(8  * scale_factor))
+
+    # === Main frame ===
+    main_frame = tk.Frame(root, bg='#2C3E50', padx=pad_large, pady=pad_medium)
+    main_frame.pack(fill="both", expand=True)
+
+    # === HEADER BANNER (pack top) ===
+    header_frame = tk.Frame(main_frame, bg='#1A5276',
+                            padx=pad_large, pady=max(8, int(12 * scale_factor)))
+    header_frame.pack(fill='x', pady=(0, pad_medium))
+    tk.Label(
+        header_frame,
+        text=f"📦  {slot_name} Slot — Pre-Assembly Scan",
+        font=("Arial", font_size_header, "bold"),
+        fg='white', bg='#1A5276'
+    ).pack()
+
+    # === INPUT GRID (pack top, below header) ===
+    form_frame = tk.Frame(main_frame, bg='#34495E',
+                          padx=pad_large, pady=max(8, int(12 * scale_factor)))
+    form_frame.pack(fill='x', pady=(0, pad_medium))
+
+    form_frame.columnconfigure(0, weight=1)
+    form_frame.columnconfigure(1, weight=4)
+    form_frame.columnconfigure(2, weight=0)
+    form_frame.columnconfigure(3, weight=2)
+
+    for col, text in enumerate(["Field", "Scan / Enter", "✓", "Hint"]):
+        tk.Label(
+            form_frame, text=text,
+            font=("Arial", font_size_medium, "bold"),
+            fg='#BDC3C7', bg='#34495E'
+        ).grid(row=0, column=col, padx=pad_small, pady=pad_small, sticky='ew')
+
+    field_defs = [
+        ("HWDB QR Code",   'hwdb_qr'),
+        ("CE Box SN",      'ce_box_sn'),
+        ("Cover (last 4)", 'cover_last4'),
+        ("FEMB ID [1/2]",  'femb_id_1'),
+        ("FEMB ID [2/2]",  'femb_id_2'),
+    ]
+
+    for i, (label_text, key) in enumerate(field_defs, start=1):
+        tk.Label(
+            form_frame, text=label_text,
+            font=("Arial", font_size_medium),
+            fg='white', bg='#34495E',
+            width=col_label_width, anchor='w'
+        ).grid(row=i, column=0, padx=pad_small, pady=row_pady, sticky='w')
+
+        entry = tk.Entry(
+            form_frame,
+            font=("Arial", font_size_medium),
+            width=col_entry_width,
+            relief='sunken'
+        )
+        entry.grid(row=i, column=1, padx=pad_small, pady=row_pady, sticky='ew')
+        entries[key] = entry
+
+        sl = tk.Label(
+            form_frame, text="⏳",
+            font=("Arial", font_size_medium),
+            fg='white', bg='#34495E',
+            width=col_status_width
+        )
+        sl.grid(row=i, column=2, padx=pad_small, pady=row_pady, sticky='ew')
+        status_labels[key] = sl
+
+        hl = tk.Label(
+            form_frame, text="",
+            font=("Arial", font_size_medium - 1),
+            fg='#E74C3C', bg='#34495E', anchor='w'
+        )
+        hl.grid(row=i, column=3, padx=pad_small, pady=row_pady, sticky='ew')
+        hint_labels[key] = hl
+
+    # Bind validators
+    validators = {
+        'hwdb_qr':    validate_hwdb_qr,
+        'ce_box_sn':  validate_ce_box,
+        'cover_last4':validate_cover,
+        'femb_id_1':  validate_femb1,
+        'femb_id_2':  validate_femb2,
+    }
+    for key, fn in validators.items():
+        entries[key].bind('<KeyRelease>', fn)
+        entries[key].bind('<FocusOut>', fn)
+
+    # Return key advances to next field; last field triggers submit
+    key_order = ['hwdb_qr', 'ce_box_sn', 'cover_last4', 'femb_id_1', 'femb_id_2']
+    for i, key in enumerate(key_order[:-1]):
+        next_key = key_order[i + 1]
+        entries[key].bind('<Return>', lambda _evt, nk=next_key: entries[nk].focus_set())
+    entries['femb_id_2'].bind('<Return>', lambda _evt: on_submit())
+
+    # === IMAGE CONTAINER — fills all remaining height ===
+    img_container = tk.Frame(main_frame, bg='#2C3E50')
+    img_container.pack(fill='both', expand=True)
+
+    # Measure space already used by header + form so the image fills the rest
+    root.update_idletasks()
+    used_px = (header_frame.winfo_height() + form_frame.winfo_height()
+               + pad_medium * 6 + pad_large * 2)
+    remaining_px = max(150, screen_height - used_px)
+
+    if image_path:
+        try:
+            img = Image.open(image_path)
+            img_ratio = img.height / img.width
+            target_height = remaining_px - pad_medium * 2
+            target_width  = int(target_height / img_ratio)
+            max_w = screen_width - pad_large * 4
+            if target_width > max_w:
+                target_width  = max_w
+                target_height = int(target_width * img_ratio)
+            img   = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+            img_lbl = tk.Label(img_container, image=photo, bg='#2C3E50')
+            img_lbl.image = photo
+            img_lbl.pack(expand=True)
+        except Exception as img_err:
+            print(f"Error loading image: {img_err}")
+
+    # Error label and submit button float over the image container
+    error_label = tk.Label(
+        img_container, text="",
+        font=("Arial", font_size_error, "bold"),
+        fg='#E74C3C', bg='#2C3E50'
+    )
+    error_label.place(relx=0.02, rely=1.0, anchor='sw',
+                      y=-max(8, int(14 * scale_factor)))
+
+    submit_btn = tk.Button(
+        img_container,
+        text="Confirm & Continue",
+        command=on_submit,
+        font=("Arial", font_size_large, "bold"),
+        bg='#FF9800', fg='white',
+        padx=max(15, int(30 * scale_factor)),
+        pady=max(5,  int(10 * scale_factor)),
+        relief='raised', cursor='hand2'
+    )
+    submit_btn.place(relx=1.0, rely=1.0, anchor='se',
+                     x=-max(10, int(20 * scale_factor)),
+                     y=-max(8,  int(14 * scale_factor)))
+
+    entries['hwdb_qr'].focus_set()
+    root.mainloop()
+    return result

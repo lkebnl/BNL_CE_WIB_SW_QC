@@ -854,64 +854,17 @@ if 1 in state_list:
             print_status('warning', "         Bottom slot marked as EMPTY (no FEMB installed)")
         else:
             input("Please get the foam box to be tested (Enter to continue…)")
-            #### 9. Display bottom slot visual inspection popup
-            my_options = ["Install MiniSAS Cable and Clamp", "Install Test Cover", "Install Power Cable",
-                          "Install Toy_TPCs and Cables", "Insert into Bottom Slot"]
-            pop01 = pop.show_image_popup(
-                title="Bottom slot Visual Inspection",
+            #### 9. Display bottom slot visual inspection popup and collect assembly data
+            _asm = pop.show_assembly_scan_popup(
+                slot_name="BOTTOM",
                 image_path=os.path.join(ROOT_DIR, "GUI", "output_pngs", "9.png")
             )
-            bottom_assembly_data = collect_assembly_data("BOTTOM")
-            femb_id_0 = None  # Initialize
-            while True:
-                print(Fore.CYAN + "         [1/2] Scan the FEMB QR code (1st scan)" + Style.RESET_ALL)
-                femb_id_00 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-
-                ##### Validate: Must contain 'BNL', 'FEMB', and 'IO-1865-1L'
-                if is_valid_femb_id(femb_id_00):
-                    break
-                else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
-            while True:
-                print(Fore.CYAN + "         [2/2] Scan the FEMB QR code (2nd scan)" + Style.RESET_ALL)
-                femb_id_01 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-
-                if is_valid_femb_id(femb_id_01):
-                    break
-                else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
-
-            ##### Match check - If scans match, proceed; else require 3rd scan
-            if femb_id_01 == femb_id_00:
-                print_status('success', "         Bottom CE box QR ID recorded successfully")
-                femb_id_0 = femb_id_01
-            else:
-                ##### Third scan verification (if first two don't match)
-                print_status('warning', '         QR codes do not match! Please scan a 3rd time and verify carefully.')
-                while True:
-                    while True:
-                        print("         Scan bottom FEMB QR code " + Fore.CYAN + "(3rd attempt - try 1):" + Style.RESET_ALL)
-                        femb_id_2 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if is_valid_femb_id(femb_id_2):
-                            break
-                        else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
-
-                    while True:
-                        print("         Scan bottom FEMB QR code " + Fore.CYAN + "(3rd attempt - try 2):" + Style.RESET_ALL)
-                        femb_id_3 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if is_valid_femb_id(femb_id_3):
-                            break
-                        else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
-
-                    if femb_id_2 == femb_id_3:
-                        print(Fore.GREEN + "         ✓ QR codes match. Proceeding..." + Style.RESET_ALL)
-                        femb_id_0 = femb_id_2
-                        break
-                    else:
-                        print(
-                            Fore.RED + "         ✗ QR codes still do not match. Please scan again carefully." + Style.RESET_ALL)
+            bottom_assembly_data = {
+                'hwdb_qr':    _asm['hwdb_qr'],
+                'ce_box_sn':  _asm['ce_box_sn'],
+                'cover_last4':_asm['cover_last4']
+            }
+            femb_id_0 = _asm['femb_id']
 
         #### 11. Version Identification based on ID
         if femb_id_0 != 'EMPTY':
@@ -1008,70 +961,17 @@ if 1 in state_list:
             # Slot will have a FEMB - collect assembly data
             #### 14b. Pre-Assembly Data Collection (HWDB, CE box, Cover SN)
             input("Please get the foam box to be tested (Enter to continue…)")
-            #### 9. Display bottom slot visual inspection popup
-            my_options = ["Install MiniSAS Cable and Clamp", "Install Test Cover", "Install Power Cable",
-                          "Install Toy_TPCs and Cables", "Insert into Bottom Slot"]
-            pop01 = pop.show_image_popup(
-                title="Bottom slot Visual Inspection",
+            #### 14b. Pre-Assembly Data Collection and FEMB Scan (TOP slot)
+            _asm = pop.show_assembly_scan_popup(
+                slot_name="TOP",
                 image_path=os.path.join(ROOT_DIR, "GUI", "output_pngs", "9.png")
             )
-            top_assembly_data = collect_assembly_data("TOP")
-
-            #### 15. QR Code Scanning & Validation (Triple verification)
-            ##### First scan
-            femb_id_1 = None  # Initialize
-            while True:
-                print(Fore.YELLOW + "         Step 1.21: " + Style.RESET_ALL + "Scan the FEMB QR code " + Fore.CYAN + "(1st scan)" + Style.RESET_ALL)
-                femb_id_10 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-
-                ##### Validate: Must contain 'BNL', 'FEMB', and 'IO-1865-1L'
-                if is_valid_femb_id(femb_id_10):
-                    break
-                else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
-
-            ##### Second scan
-            while True:
-                print(Fore.YELLOW + "         Step 1.22: " + Style.RESET_ALL + "Scan the FEMB QR code " + Fore.CYAN + "(2nd scan)" + Style.RESET_ALL)
-                femb_id_11 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-
-                if is_valid_femb_id(femb_id_11):
-                    break
-                else:
-                    print_status('error', "         Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again.")
-
-            ##### Match check - If scans match, proceed; else require 3rd scan
-            if femb_id_11 == femb_id_10:
-                print(Fore.GREEN + "         ✓ Top CE box QR ID recorded successfully" + Style.RESET_ALL)
-                femb_id_1 = femb_id_11
-            else:
-                ##### Third scan verification (if first two don't match)
-                print(
-                    Fore.MAGENTA + '         ⚠️  QR codes do not match! Please scan a 3rd time and verify carefully.' + Style.RESET_ALL)
-                while True:
-                    while True:
-                        print("         Scan top FEMB QR code " + Fore.CYAN + "(3rd attempt - try 1):" + Style.RESET_ALL)
-                        femb_id_2 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if is_valid_femb_id(femb_id_2):
-                            break
-                        else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
-
-                    while True:
-                        print("         Scan top FEMB QR code " + Fore.CYAN + "(3rd attempt - try 2):" + Style.RESET_ALL)
-                        femb_id_3 = input(Fore.YELLOW + '         >> ' + Style.RESET_ALL).strip()
-                        if is_valid_femb_id(femb_id_3):
-                            break
-                        else:
-                            print(Fore.RED + "         ✗ Invalid FEMB ID: must contain 'BNL', 'FEMB', and a valid board type. Please try again." + Style.RESET_ALL)
-
-                    if femb_id_2 == femb_id_3:
-                        print(Fore.GREEN + "         ✓ QR codes match. Proceeding..." + Style.RESET_ALL)
-                        femb_id_1 = femb_id_2
-                        break
-                    else:
-                        print(
-                            Fore.RED + "         ✗ QR codes still do not match. Please scan again carefully." + Style.RESET_ALL)
+            top_assembly_data = {
+                'hwdb_qr':    _asm['hwdb_qr'],
+                'ce_box_sn':  _asm['ce_box_sn'],
+                'cover_last4':_asm['cover_last4']
+            }
+            femb_id_1 = _asm['femb_id']
 
         # Version identification
         if femb_id_1 != 'EMPTY':
