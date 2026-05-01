@@ -1,10 +1,10 @@
 ﻿QC_data_root_folder,/mnt/data/
 tester,lke
-SLOT0,BNL_FEMB_IO-1865-1L_00016
-SLOT1,BNL_FEMB_IO-1865-1L_00010
+SLOT0,BNL_FEMB_IO-1865-1L_00010
+SLOT1, 
 SLOT2,
 SLOT3,
 test_site,BNL_CTS_01
 toy_TPC,y
-comment,"Bottom_HWDB=https://dbweb0.fnal.gov/cdb/view/component/D08101100041-00008,Bottom_CE=VD-0001,Bottom_Cover=0001,Bottom_FEMB=BNL_FEMB_IO-1865-1L_00016,Top_HWDB=https://dbweb0.fnal.gov/cdb/view/component/D08101100041-00005,Top_CE=VD-0002,Top_Cover=0002,Top_FEMB=BNL_FEMB_IO-1865-1L_00010"
+comment,"Bottom_HWDB=https://dbweb0.fnal.gov/cdb/view/component/D08101100041-00005,Bottom_CE=VD-0000,Bottom_Cover=0000,Bottom_FEMB=BNL_FEMB_IO-1865-1L_00010,Top_HWDB=EMPTY,Top_CE=EMPTY,Top_Cover=EMPTY,Top_FEMB=EMPTY"
 top_path,/mnt/data/

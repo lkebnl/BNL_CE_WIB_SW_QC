@@ -442,6 +442,7 @@ print("  Brookhaven National Laboratory (BNL)")
 print("=" * 70 + Style.RESET_ALL)
 input_name = input('Please enter your name:\n' + Fore.YELLOW + '>> ' + Style.RESET_ALL)
 receiver = get_email()
+update_email_receiver_in_config(receiver)
 print(Fore.YELLOW + "\nIs there a CE box support structure in the CTS chamber now?" + Style.RESET_ALL)
 print("  " + Fore.GREEN + "'N'" + Style.RESET_ALL + " - No, this is a fresh start (normal flow)")
 print("  " + Fore.CYAN + "'Y'" + Style.RESET_ALL + " - Yes")
@@ -498,9 +499,6 @@ except Exception as e:
 
 sender = cts_config.get('Email_Sender', 'bnlr216@gmail.com')
 password = cts_config.get('Email_Password', 'vvef tosp minf wwhf')
-receiver = cts_config.get('email_receiver', 'lke@bnl.gov')
-
-update_email_receiver_in_config(receiver)
 confirm_function("Please confirm that the TERMINAL 'CTS Monitor' has been launched")
 shifter_log_url = cts_config.get('Shifter_Log_URL', "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2")
 print(f"Please open shifter log link in Chrome: {shifter_log_url}")
