@@ -714,8 +714,8 @@ def show_assembly_scan_popup(
         ("HWDB QR Code",   'hwdb_qr'),
         ("CE Box SN",      'ce_box_sn'),
         ("Cover (last 4)", 'cover_last4'),
-        ("FEMB ID [1/2]",  'femb_id_1'),
-        ("FEMB ID [2/2]",  'femb_id_2'),
+        ("FEMB ID ",  'femb_id_1'),
+        ("FEMB ID [rescan]",  'femb_id_2'),
     ]
 
     for i, (label_text, key) in enumerate(field_defs, start=1):
@@ -816,7 +816,8 @@ def show_assembly_scan_popup(
         bg='#FF9800', fg='white',
         padx=max(15, int(30 * scale_factor)),
         pady=max(5,  int(10 * scale_factor)),
-        relief='raised', cursor='hand2'
+        relief='raised', cursor='hand2',
+        takefocus=False
     )
     submit_btn.place(relx=1.0, rely=1.0, anchor='se',
                      x=-max(10, int(20 * scale_factor)),

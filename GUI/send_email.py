@@ -8,7 +8,16 @@ import os
 # Default CC recipient for all test emails
 DEFAULT_CC = "lke@bnl.gov"
 
+_email_enabled = True
+
+def set_email_mode(enabled: bool):
+    global _email_enabled
+    _email_enabled = enabled
+
 def send_email(sender_email, sender_password, receiver_email, subject, body, cc_email=None):
+   if not _email_enabled:
+       print(f"[Email mode OFF] Skipped: {subject}")
+       return
    message = MIMEMultipart()
    message['From'] = sender_email
    message['To'] = receiver_email
@@ -44,6 +53,9 @@ def send_email(sender_email, sender_password, receiver_email, subject, body, cc_
        server.quit()
 
 def send_email_with_attachment(sender_email, sender_password, receiver_email, subject, body, attachment_path=None, cc_email=None):
+    if not _email_enabled:
+        print(f"[Email mode OFF] Skipped: {subject}")
+        return
     """
     Send email with optional text file attachment
 

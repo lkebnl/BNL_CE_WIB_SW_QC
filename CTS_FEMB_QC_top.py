@@ -499,6 +499,7 @@ except Exception as e:
 
 sender = cts_config.get('Email_Sender', 'bnlr216@gmail.com')
 password = cts_config.get('Email_Password', 'vvef tosp minf wwhf')
+send_email.set_email_mode(cts_config.get('email_mode', 'on').strip().lower() == 'on')
 confirm_function("Please confirm that the TERMINAL 'CTS Monitor' has been launched")
 shifter_log_url = cts_config.get('Shifter_Log_URL', "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2")
 print(f"Please open shifter log link in Chrome: {shifter_log_url}")
