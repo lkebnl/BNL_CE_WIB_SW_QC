@@ -561,7 +561,12 @@ if not is_2nd_ce_box:
     print(Fore.CYAN + "\n" + "=" * 70)
     print("  CTS CRYOGENIC SYSTEM INITIALIZATION")
     print("=" * 70 + Style.RESET_ALL)
-
+    while True:
+        print(Fore.CYAN + "Please confirm the CTS is power on" + Style.RESET_ALL)
+        com = input(Fore.YELLOW + "  Type 'CTS12V on' to confirm >> " + Style.RESET_ALL)
+        if com.strip().lower() == 'cts12v on':
+            break
+        print(Fore.RED + "  Invalid input. Please type 'CTS on'." + Style.RESET_ALL)
     if cts_manual_mode:
         cryo = None
         cryo_auto_mode = False
@@ -1103,12 +1108,12 @@ if is_2nd_ce_box:
     print("-" * 70 + Style.RESET_ALL)
 
     chamber_empty = False
-    while True:
-        print(Fore.CYAN + "Please confirm the CTS is power on" + Style.RESET_ALL)
-        com = input(Fore.YELLOW + "  Type 'CTS on' to confirm >> " + Style.RESET_ALL)
-        if com.strip().lower() == 'cts on':
-            break
-        print(Fore.RED + "  Invalid input. Please type 'CTS on'." + Style.RESET_ALL)
+    # while True:
+    #     print(Fore.CYAN + "Please confirm the CTS is power on" + Style.RESET_ALL)
+    #     com = input(Fore.YELLOW + "  Type 'CTS on' to confirm >> " + Style.RESET_ALL)
+    #     if com.strip().lower() == 'cts on':
+    #         break
+    #     print(Fore.RED + "  Invalid input. Please type 'CTS on'." + Style.RESET_ALL)
     while True:
         print(Fore.YELLOW + "\n⚠️  SAFETY CHECK:" + Style.RESET_ALL)
         print("Please confirm the first CE structure is removed and disassembly, the CTS chamber is empty.")
