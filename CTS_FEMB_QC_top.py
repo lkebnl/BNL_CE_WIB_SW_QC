@@ -1103,7 +1103,12 @@ if is_2nd_ce_box:
     print("-" * 70 + Style.RESET_ALL)
 
     chamber_empty = False
-    confirm_function("Please confirm the CTS is power on")
+    while True:
+        print(Fore.CYAN + "Please confirm the CTS is power on" + Style.RESET_ALL)
+        com = input(Fore.YELLOW + "  Type 'CTS on' to confirm >> " + Style.RESET_ALL)
+        if com.strip().lower() == 'cts on':
+            break
+        print(Fore.RED + "  Invalid input. Please type 'CTS on'." + Style.RESET_ALL)
     while True:
         print(Fore.YELLOW + "\n⚠️  SAFETY CHECK:" + Style.RESET_ALL)
         print("Please confirm the first CE structure is removed and disassembly, the CTS chamber is empty.")
@@ -1565,7 +1570,7 @@ if 'cts_ready_time' in locals() and cts_ready_time is not None:
     print_separator()
 if any(x in state_list for x in [3, 4, 5]):
     if ps_manual_mode:
-        psu = ManualPowerSupply()
+        psu = ManualPowerSupply(email_info={'sender': sender, 'password': password, 'receiver': receiver})
         print_status('info', "Power supply: MANUAL mode - operator will control power supply")
     else:
         _psu_connected = False
@@ -1585,7 +1590,7 @@ if any(x in state_list for x in [3, 4, 5]):
                 _psu_choice = input(Fore.YELLOW + "Enter choice (M/R) >> " + Style.RESET_ALL).strip().upper()
                 if _psu_choice == 'M':
                     ps_manual_mode = True
-                    psu = ManualPowerSupply()
+                    psu = ManualPowerSupply(email_info={'sender': sender, 'password': password, 'receiver': receiver})
                     print_status('info', "Switched to MANUAL power supply mode")
                     _psu_connected = True
                 else:
@@ -2950,7 +2955,12 @@ except Exception as e:
 
 print(Fore.CYAN + f"Network upload path: {network_upload_path}" + Style.RESET_ALL)
 print(Fore.CYAN + f"FEMB IDs: {', '.join(femb_ids) if femb_ids else 'None'}" + Style.RESET_ALL)
-confirm_function("Please confirm the CTS is power off")
+while True:
+    print(Fore.CYAN + "Please confirm the CTS is power off" + Style.RESET_ALL)
+    com = input(Fore.YELLOW + "  Type 'CTS off' to confirm >> " + Style.RESET_ALL)
+    if com.strip().lower() == 'cts off':
+        break
+    print(Fore.RED + "  Invalid input. Please type 'CTS off'." + Style.RESET_ALL)
 ### 55. Close CTS and Exit
 while True:
     print("Enter 'exit' to exit ...")

@@ -286,12 +286,29 @@ class cryobox:
  
             if len(portnos) == 0:
                 print ("No available serial port exists, please check connection")
-                print("step 1: Power off cold control box ") 
-                print("step 2: Unplug USB cable from cold control box ") 
-                print("step 3: Wait 5 seconds ") 
+                if EMAIL_AVAILABLE:
+                    try:
+                        _cfg = {}
+                        _csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'init_setup.csv')
+                        with open(_csv) as _f:
+                            for _line in _f:
+                                if ',' in _line:
+                                    _k, _v = _line.strip().split(',', 1)
+                                    _cfg[_k.strip()] = _v.strip()
+                        send_email.send_email(
+                            _cfg['Email_Sender'], _cfg['Email_Password'], _cfg['email_receiver'],
+                            "ACTION REQUIRED: CTS lost connection - no serial port found",
+                            "No available serial port found for CTS.\nPlease check the USB connection and power cycle the CTS control box."
+                        )
+                        print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+                    except Exception as e:
+                        print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
+                print("step 1: Power off cold control box ")
+                print("step 2: Unplug USB cable from cold control box ")
+                print("step 3: Wait 5 seconds ")
                 print("step 4: Turn cold control box back on")
                 print("step 5: Replug USB cable to cold control box")
-                print("step 6: Call tech coordinator if you can’t  fix it")
+                print("step 6: Call tech coordinator if you can't  fix it")
                 fixedflg = input("fixed? (y/n): ")
                 if 'Y' in fixedflg or 'y' in fixedflg:
                     continue
@@ -540,14 +557,14 @@ if __name__=="__main__":
 #    print ("Time:", time.time_ns()//1e9 - t0)
 #
 #    t0 =  time.time_ns()//1e9
-    cryo.cryo_coldgas(waitminutes = 1)
+#    cryo.cryo_coldgas(waitminutes = 1)
 #    print ("Time:", time.time_ns()//1e9 - t0)
 #
 #    t0 =  time.time_ns()//1e9
 #    cryo.cryo_immerse(waitminutes = 30)
 #    print ("Time:", time.time_ns()//1e9 - t0)
 
-    t0 =  time.time_ns()//1e9
-    cryo.cryo_warmgas(waitminutes = 1)
-    print ("Time:", time.time_ns()//1e9 - t0)
+#    t0 =  time.time_ns()//1e9
+#    cryo.cryo_warmgas(waitminutes = 1)
+#    print ("Time:", time.time_ns()//1e9 - t0)
 # 

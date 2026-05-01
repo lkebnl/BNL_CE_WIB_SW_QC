@@ -6,6 +6,7 @@ Contains power supply control and safety functions
 import time
 import colorama
 from colorama import Fore, Style
+import GUI.send_email as send_email
 
 colorama.init()
 
@@ -18,15 +19,66 @@ class ManualPowerSupply:
     """
     is_manual = True
 
+    def __init__(self, email_info=None):
+        self.email_info = email_info  # dict with keys: sender, password, receiver
+
     def set_channel(self, ch, voltage, current, on=True):
         action = "ON" if on else "OFF"
         print(Fore.YELLOW + f"\n⚠️  MANUAL: Please turn {action} the WIB 12V power supply" + Style.RESET_ALL)
-        input(Fore.YELLOW + f"  Press Enter when 12V power supply is {action}... " + Style.RESET_ALL)
+        if on:
+            if self.email_info:
+                try:
+                    send_email.send_email(
+                        self.email_info['sender'], self.email_info['password'],
+                        self.email_info['receiver'],
+                        "ACTION REQUIRED: Please turn ON WIB 12V power supply",
+                        "Please turn ON the WIB 12V power supply now, then confirm in the terminal."
+                    )
+                    print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+                except Exception as e:
+                    print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
+            while True:
+                com = input(Fore.YELLOW + "  Type 'WIB12v on' to confirm power is ON >> " + Style.RESET_ALL)
+                if com.strip().lower() == 'wib12v on':
+                    break
+                print(Fore.RED + "  Invalid input. Please type 'WIB12v on'." + Style.RESET_ALL)
+        else:
+            if self.email_info:
+                try:
+                    send_email.send_email(
+                        self.email_info['sender'], self.email_info['password'],
+                        self.email_info['receiver'],
+                        "ACTION REQUIRED: Please turn OFF WIB 12V power supply",
+                        "Please turn OFF the WIB 12V power supply now, then confirm in the terminal."
+                    )
+                    print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+                except Exception as e:
+                    print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
+            while True:
+                com = input(Fore.YELLOW + "  Type 'WIB12v off' to confirm power is OFF >> " + Style.RESET_ALL)
+                if com.strip().lower() == 'wib12v off':
+                    break
+                print(Fore.RED + "  Invalid input. Please type 'WIB12v off'." + Style.RESET_ALL)
         print(Fore.GREEN + f"  ✓ 12V power supply {action} confirmed (manual)" + Style.RESET_ALL)
 
     def turn_off_all(self):
         print(Fore.YELLOW + "\n⚠️  MANUAL: Please turn OFF the WIB 12V power supply" + Style.RESET_ALL)
-        input(Fore.YELLOW + "  Press Enter when 12V power supply is OFF... " + Style.RESET_ALL)
+        if self.email_info:
+            try:
+                send_email.send_email(
+                    self.email_info['sender'], self.email_info['password'],
+                    self.email_info['receiver'],
+                    "ACTION REQUIRED: Please turn OFF WIB 12V power supply",
+                    "Please turn OFF the WIB 12V power supply now, then confirm in the terminal."
+                )
+                print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+            except Exception as e:
+                print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
+        while True:
+            com = input(Fore.YELLOW + "  Type 'WIB12v off' to confirm power is OFF >> " + Style.RESET_ALL)
+            if com.strip().lower() == 'wib12v off':
+                break
+            print(Fore.RED + "  Invalid input. Please type 'WIB12v off'." + Style.RESET_ALL)
         print(Fore.GREEN + "  ✓ 12V power supply OFF confirmed (manual)" + Style.RESET_ALL)
 
     def measure(self, ch):
@@ -35,7 +87,22 @@ class ManualPowerSupply:
 
     def output_off(self, ch):
         print(Fore.YELLOW + "\n⚠️  MANUAL: Please turn OFF the WIB 12V power supply" + Style.RESET_ALL)
-        input(Fore.YELLOW + "  Press Enter when 12V power supply is OFF... " + Style.RESET_ALL)
+        if self.email_info:
+            try:
+                send_email.send_email(
+                    self.email_info['sender'], self.email_info['password'],
+                    self.email_info['receiver'],
+                    "ACTION REQUIRED: Please turn OFF WIB 12V power supply",
+                    "Please turn OFF the WIB 12V power supply now, then confirm in the terminal."
+                )
+                print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+            except Exception as e:
+                print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
+        while True:
+            com = input(Fore.YELLOW + "  Type 'WIB12v off' to confirm power is OFF >> " + Style.RESET_ALL)
+            if com.strip().lower() == 'wib12v off':
+                break
+            print(Fore.RED + "  Invalid input. Please type 'WIB12v off'." + Style.RESET_ALL)
         print(Fore.GREEN + "  ✓ 12V power supply OFF confirmed (manual)" + Style.RESET_ALL)
 
     def close(self):
@@ -49,13 +116,25 @@ def safe_power_off(psu, current_threshold=0.2, max_attempts=5):
     """
     if getattr(psu, 'is_manual', False):
         print(Fore.YELLOW + "\n⚠️  MANUAL: Please turn OFF the WIB 12V power supply and check the current is zero" + Style.RESET_ALL)
+        _email_info = getattr(psu, 'email_info', None)
+        if _email_info:
+            try:
+                send_email.send_email(
+                    _email_info['sender'], _email_info['password'],
+                    _email_info['receiver'],
+                    "ACTION REQUIRED: Please turn OFF WIB 12V power supply",
+                    "Please turn OFF the WIB 12V power supply now, then confirm in the terminal."
+                )
+                print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+            except Exception as e:
+                print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
         while True:
-            com = input(Fore.YELLOW + "Type 'confirm' when 12V power supply is OFF >> " + Style.RESET_ALL)
-            if com.lower() == "confirm":
+            com = input(Fore.YELLOW + "  Type 'WIB12v off' to confirm power is OFF >> " + Style.RESET_ALL)
+            if com.strip().lower() == 'wib12v off':
                 print(Fore.GREEN + "✓ 12V power supply OFF confirmed (manual)" + Style.RESET_ALL)
                 return True
             else:
-                print(Fore.RED + "Invalid input. Please type 'confirm'." + Style.RESET_ALL)
+                print(Fore.RED + "  Invalid input. Please type 'WIB12v off'." + Style.RESET_ALL)
 
     attempt = 0
     while True:
@@ -92,13 +171,25 @@ def safe_power_off(psu, current_threshold=0.2, max_attempts=5):
             choice = input(Fore.YELLOW + "Enter choice (M/R) >> " + Style.RESET_ALL).strip().upper()
             if choice == 'M':
                 print(Fore.YELLOW + "\n⚠️  MANUAL: Please turn OFF the WIB 12V power supply and check the current is zero" + Style.RESET_ALL)
+                _email_info = getattr(psu, 'email_info', None)
+                if _email_info:
+                    try:
+                        send_email.send_email(
+                            _email_info['sender'], _email_info['password'],
+                            _email_info['receiver'],
+                            "ACTION REQUIRED: Please turn OFF WIB 12V power supply",
+                            "Please turn OFF the WIB 12V power supply now, then confirm in the terminal."
+                        )
+                        print(Fore.CYAN + "  ✉ Email notification sent to tester." + Style.RESET_ALL)
+                    except Exception as e:
+                        print(Fore.RED + f"  ✗ Failed to send email: {e}" + Style.RESET_ALL)
                 while True:
-                    com = input(Fore.YELLOW + "Type 'confirm' when 12V power supply is OFF >> " + Style.RESET_ALL)
-                    if com.lower() == "confirm":
+                    com = input(Fore.YELLOW + "  Type 'WIB12v off' to confirm power is OFF >> " + Style.RESET_ALL)
+                    if com.strip().lower() == 'wib12v off':
                         print(Fore.GREEN + "✓ 12V power supply OFF confirmed (manual)" + Style.RESET_ALL)
                         return True
                     else:
-                        print(Fore.RED + "Invalid input. Please type 'confirm'." + Style.RESET_ALL)
+                        print(Fore.RED + "  Invalid input. Please type 'WIB12v off'." + Style.RESET_ALL)
             else:
                 attempt = 0  # Reset attempt counter for retry
 
