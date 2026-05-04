@@ -204,6 +204,7 @@ report_log057_fembrmsmax = defaultdict(dict)
 report_log057_fembrmsmin = defaultdict(dict)
 report_log057_fembrms = defaultdict(dict)
 report_log059_rms_table_log = defaultdict(dict)
+report_log05_warning = defaultdict(dict)  # {ifemb: {ch: fname}} single-config RMS warning channels
 
 # 06
 report_log06 = defaultdict(dict)    # input information

@@ -748,6 +748,11 @@ def section_report(datareport, fembs, fembNo, fembsName):
             if 5 in log.test_label:
                 if check_status05 == True:
                     file.write('### ' + '</span>' + '<span id="item5"> Chapter_5 </span>'  + '&nbsp;&nbsp;&nbsp;&nbsp; <span style = "color : green;">' + "Noise Evaluation"  + '    < Pass >' + '</span>' + '\n')
+                    if log.report_log05_warning[ifemb]:
+                        file.write('\n> **Warning**: the following channels show elevated noise in a single configuration only — treated as pass:\n\n')
+                        for ch, fname in sorted(log.report_log05_warning[ifemb].items()):
+                            file.write('> - Ch {:3d} &nbsp; `{}`\n'.format(ch, fname))
+                        file.write('\n')
                 else:
                     file.write('### ' + '</span>' + '<span id="item5"> Chapter_5 </span>'  + '&nbsp;&nbsp;&nbsp;&nbsp; <span style = "color : red;">' + "Noise Evaluation" + '    < Fail >' + '</span>'  + '\n')
                     file.write(str(log.report_log0500[ifemb]['Issue List']))

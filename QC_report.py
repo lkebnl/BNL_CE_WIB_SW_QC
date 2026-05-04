@@ -847,7 +847,8 @@ class QC_reports:
 
         section_status = True
         check = [True, True, True, True]
-        check_list = [0, 1, 2, 3]
+        check_list = [[], [], [], []]
+        rms_bad_per_cfg = {i: {} for i in range(4)}  # {ifemb: {fname: [bad_chans]}}
         # datafiles = sorted(glob.glob(datadir+"RMS*.bin"), key=os.path.getmtime)
         for afile in femb_rms_dict.keys():
             # with open(afile, 'rb') as fn:
@@ -896,6 +897,8 @@ class QC_reports:
                     rms_status = tmp[0]
                     rms_err_content = tmp[1]
                     log.report_log056_fembrms[ifemb][fname] = tmp[2]
+                    if not rms_status:
+                        rms_bad_per_cfg[ifemb][fname] = rms_err_content[0]
 
                 log.report_log057_fembrms[ifemb][fname] = '\nmean {},\nstd {},\nmax {},\nmin {}'.format(ped, rms,
                                                                                                         pedmax, pedmin)
@@ -919,6 +922,55 @@ class QC_reports:
                 log.report_log057_fembrmsstd[ifemb][fname] = np.round(np.std(rms), 1)
                 log.report_log057_fembrmsmax[ifemb][fname] = np.max(rms)
                 log.report_log057_fembrmsmin[ifemb][fname] = np.min(rms)
+
+        # Phase 2: Cross-validate RMS failures across all configurations.
+        # A channel failing RMS in exactly 1 configuration is treated as a warning (still passes).
+        # A channel failing in >=2 configurations is a real failure.
+        section_status = True
+        check = [True, True, True, True]
+        check_list = [[], [], [], []]
+        for ifemb in self.fembs:
+            channel_fail_configs = {}
+            for fname, bad_chans in rms_bad_per_cfg[ifemb].items():
+                for ch in bad_chans:
+                    channel_fail_configs.setdefault(ch, []).append(fname)
+
+            warning_channels = {ch: fnames[0]
+                                for ch, fnames in channel_fail_configs.items() if len(fnames) == 1}
+            real_fail_set = {ch for ch, fnames in channel_fail_configs.items() if len(fnames) >= 2}
+            log.report_log05_warning[ifemb] = warning_channels
+
+            real_bad_chans, real_bad_chips = [], []
+            for fname, bad_chans in rms_bad_per_cfg[ifemb].items():
+                ped_failed = (fname in log.report_log054_pedestal_issue[ifemb] and
+                              len(log.report_log054_pedestal_issue[ifemb][fname][0]) > 0)
+                has_real_rms_fail = any(ch in real_fail_set for ch in bad_chans)
+                index_of_keyword = fname.find("mVfC_")
+                keyword = fname[index_of_keyword - 4: index_of_keyword]
+
+                if ped_failed or has_real_rms_fail:
+                    log.report_log05_result[ifemb][fname] = False
+                    log.report_log05_tablecell[ifemb][fname] = (
+                        "<span style='color:red;'> {} </span>".format(keyword))
+                    check[ifemb] = False
+                    for ch in bad_chans:
+                        if ch in real_fail_set and ch not in real_bad_chans:
+                            real_bad_chans.append(ch)
+                            real_bad_chips.append(ch // 16)
+                else:
+                    log.report_log05_result[ifemb][fname] = 'warning'
+                    log.report_log05_tablecell[ifemb][fname] = (
+                        "<span style='color:orange;'> {} </span>".format(keyword))
+
+            # Configs where only pedestal failed (no RMS failure) remain as fail
+            for fname, ped_issue in log.report_log054_pedestal_issue[ifemb].items():
+                if len(ped_issue[0]) > 0 and fname not in rms_bad_per_cfg[ifemb]:
+                    check[ifemb] = False
+
+            if not check[ifemb]:
+                section_status = False
+                check_list[ifemb] = [real_bad_chans, real_bad_chips]
+
         for ifemb in self.fembs:
             fp = self.savedir[ifemb] + "RMS/"
             femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
@@ -964,29 +1016,33 @@ class QC_reports:
             log.report_log05_table2[femb_id]["Baseline"] = "900 mV | | | | | | |"
             log.report_log05_table2[femb_id]["interface"] = "SE OFF | | | | SE ON | DIFF |"
             log.report_log05_table2[femb_id]["peak time"] = "0.5 us | 1 us | 2 us | 3 us | 2 us | 2 us |"
-            log.report_log05_table2[femb_id]["4.7 mV"] = " {} | {} | {} | {} | {} |".format(
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_4_7mVfC_0_5us'],
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_4_7mVfC_1_0us'],
+            log.report_log05_table2[femb_id]["4.7 mV"] = " {} | {} | {} | {} | {} | {} |".format(
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_4_7mVfC_0_5us'],
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_4_7mVfC_1_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_4_7mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_4_7mVfC_3_0us'],
+                log.report_log05_tablecell[ifemb]['SEON_900mVBL_4_7mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['DIFF_900mVBL_4_7mVfC_2_0us'])
-            log.report_log05_table2[femb_id]["7.8 mV"] = " {} | {} | {} | {} | {} |".format(
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_7_8mVfC_0_5us'],
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_7_8mVfC_1_0us'],
+            log.report_log05_table2[femb_id]["7.8 mV"] = " {} | {} | {} | {} | {} | {} |".format(
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_7_8mVfC_0_5us'],
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_7_8mVfC_1_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_7_8mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_7_8mVfC_3_0us'],
+                log.report_log05_tablecell[ifemb]['SEON_900mVBL_7_8mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['DIFF_900mVBL_7_8mVfC_2_0us'])
-            log.report_log05_table2[femb_id]["14 mV"] = " {} | {} | {} | {} | {} |".format(
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_14_0mVfC_0_5us'],
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_14_0mVfC_1_0us'],
+            log.report_log05_table2[femb_id]["14 mV"] = " {} | {} | {} | {} | {} | {} |".format(
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_14_0mVfC_0_5us'],
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_14_0mVfC_1_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_14_0mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_14_0mVfC_3_0us'],
+                log.report_log05_tablecell[ifemb]['SEON_900mVBL_14_0mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['DIFF_900mVBL_14_0mVfC_2_0us'])
-            log.report_log05_table2[femb_id]["25 mV"] = " {} | {} | {} | {} | {} |".format(
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_25_0mVfC_0_5us'],
-                log.report_log05_tablecell[ifemb]['SE_200mVBL_25_0mVfC_1_0us'],
+            log.report_log05_table2[femb_id]["25 mV"] = " {} | {} | {} | {} | {} | {} |".format(
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_25_0mVfC_0_5us'],
+                log.report_log05_tablecell[ifemb]['SE_900mVBL_25_0mVfC_1_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_25_0mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['SE_900mVBL_25_0mVfC_3_0us'],
+                log.report_log05_tablecell[ifemb]['SEON_900mVBL_25_0mVfC_2_0us'],
                 log.report_log05_tablecell[ifemb]['DIFF_900mVBL_25_0mVfC_2_0us'])
             # log.report_log05_table2[femb_id]["4.7 mV"] = " {} | {} | {} | {} | {} | {} |".format(log.report_log05_tablecell[ifemb]['SE_200mVBL_4_7mVfC_0_5us'], log.report_log05_tablecell[ifemb]['SE_200mVBL_4_7mVfC_1_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_4_7mVfC_2_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_4_7mVfC_3_0us'], log.report_log05_tablecell[ifemb]['SEON_900mVBL_4_7mVfC_2_0us'], log.report_log05_tablecell[ifemb]['DIFF_900mVBL_4_7mVfC_2_0us'])
             # log.report_log05_table2[femb_id]["7.8 mV"] = " {} | {} | {} | {} | {} | {} |".format(log.report_log05_tablecell[ifemb]['SE_200mVBL_7_8mVfC_0_5us'], log.report_log05_tablecell[ifemb]['SE_200mVBL_7_8mVfC_1_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_7_8mVfC_2_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_7_8mVfC_3_0us'], log.report_log05_tablecell[ifemb]['SEON_900mVBL_7_8mVfC_2_0us'], log.report_log05_tablecell[ifemb]['DIFF_900mVBL_7_8mVfC_2_0us'])
