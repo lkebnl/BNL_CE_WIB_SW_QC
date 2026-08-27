@@ -621,14 +621,11 @@ class QC_Runs:
 
 # item #17 – Regulator Output Monitor
 # Sweeps 4 Vin × 3 ASIC configs = 12 voltage-rail snapshots via wib_vol_mon().
-# ASIC configs:
-#   A: FE SE off, ADC SE off, DIFF off          (baseline, no buffers)
-#   B: FE SE on,  ADC SE on,  DIFF off          (CMOS ref 0x62, ibuff 200 uA)
-#   C: FE SDD on, ADC SE off, DIFF on           (CMOS ref 0x62, ibuff 200 uA)
-# Register notes (ColdADC page 1):
-#   0x80 = 0x62  → SDC/CMOS input reference + buffer on
-#   0x9d = 0x27  → ibuff0 current = 200 uA
-#   0x9e = 0x27  → ibuff1 current = 200 uA
+# ASIC configs mirror the FE/ADC combinations exercised in item #1 (pwr_consumption),
+# since both items characterize FEMB power/voltage behavior under the same load states:
+#   A: FE SE off               , ADC SE   (baseline, matches item #1's SE OFF)
+#   B: FE SE on  (sts=1,sdf=1)  , ADC SE   (matches item #1's SE ON / "LArASIC buffer on")
+#   C: FE SDD on (sts=1,sdd=1)  , ADC DIFF (matches item #1's DIFF section)
     def femb_regulator_monitor(self):
         print('QC Item Begin')
         datadir = self.save_dir + "REG_MON/"
@@ -642,32 +639,30 @@ class QC_Runs:
 
         # name      – short tag used in filenames / dict keys
         # label     – human-readable description
-        # fe_sts    – FE ASIC SE stimulation enable   (sts arg to set_fe_board)
+        # fe_sts    – FE ASIC SE stimulation enable   (sts arg to set_fe_board; when 1,
+        #             also drives the internal ASIC-DAC path, matching item #1)
+        # fe_sdf    – FE ASIC SE mode                  (sdf arg to set_fe_board)
         # fe_sdd    – FE ASIC differential mode        (sdd arg to set_fe_board)
         # adc_sha_cs  – ADC SHA mode: 0 = SE, 1 = DIFF  (adcs_paras[i][2])
         # adc_ibuf_cs – ADC input buffer: 0=off, 1=SDC/CMOS  (adcs_paras[i][3])
-        # cmos_extra  – True: write reg 0x80=0x62 after femb_cfg (SE+CMOS buf path)
         ASIC_CONFIGS = [
             {
-                'name':       'FEseo_ADCseo_DIFFo',
+                'name':       'SE_off',
                 'label':      'FE: SE off  | ADC: SE off, DIFF off',
-                'fe_sts':     0, 'fe_sdd':      0,
+                'fe_sts':     0, 'fe_sdf':      0, 'fe_sdd':      0,
                 'adc_sha_cs': 0, 'adc_ibuf_cs': 0,
-                'cmos_extra': False,
             },
             {
-                'name':       'FEsen_ADCsen_DIFFo',
+                'name':       'SE_on',
                 'label':      'FE: SE on   | ADC: SE on,  DIFF off',
-                'fe_sts':     1, 'fe_sdd':      0,
-                'adc_sha_cs': 0, 'adc_ibuf_cs': 1,
-                'cmos_extra': True,
+                'fe_sts':     1, 'fe_sdf':      1, 'fe_sdd':      0,
+                'adc_sha_cs': 0, 'adc_ibuf_cs': 0,
             },
             {
-                'name':       'FEsddn_ADCseo_DIFFn',
+                'name':       'DIFF_on',
                 'label':      'FE: SDD on  | ADC: SE off, DIFF on',
-                'fe_sts':     0, 'fe_sdd':      1,
-                'adc_sha_cs': 1, 'adc_ibuf_cs': 1,
-                'cmos_extra': False,
+                'fe_sts':     1, 'fe_sdf':      0, 'fe_sdd':      1,
+                'adc_sha_cs': 1, 'adc_ibuf_cs': 0,
             },
         ]
 
@@ -694,31 +689,24 @@ class QC_Runs:
                 for i in range(8):
                     self.chk.adcs_paras[i][2] = cfg['adc_sha_cs']
                     self.chk.adcs_paras[i][3] = cfg['adc_ibuf_cs']
-                    self.chk.adcs_paras[i][8] = 1   # autocali on
+                    self.chk.adcs_paras[i][8] = 0   # autocali off, matching item #1's take_data() calls
+
+                # swdac/adac_pls_en mirror take_data()'s sts==1 + swdac==1 branch,
+                # the path item #1's SE ON and DIFF sections both go through.
+                swdac = 1 if cfg['fe_sts'] == 1 else 0
+                adac_pls_en = 1 if cfg['fe_sts'] == 1 else 0
 
                 self.chk.set_fe_board(sts=cfg['fe_sts'], snc=1, sg0=0, sg1=0,
-                                      st0=1, st1=1, swdac=0, dac=0x00,
-                                      sdd=cfg['fe_sdd'])
+                                      st0=1, st1=1, swdac=swdac, dac=0x00,
+                                      sdf=cfg['fe_sdf'], sdd=cfg['fe_sdd'])
 
                 self.chk.femb_cd_rst()
                 for femb_id in self.fembs:
                     self.chk.adc_flg[femb_id] = True
                     self.chk.fe_flg[femb_id]  = True
-                    self.chk.femb_cfg(femb_id, False)
-
-                    # Config B (SE on): overwrite reg 0x80 → 0x62 for CMOS ref
-                    if cfg['cmos_extra']:
-                        for adc_no in range(8):
-                            c_id = self.chk.adcs_paras[adc_no][0]
-                            self.chk.femb_i2c_wrchk(femb_id, chip_addr=c_id,
-                                                     reg_page=1, reg_addr=0x80,
-                                                     wrdata=0x62)
-                            self.chk.femb_i2c_wrchk(femb_id, chip_addr=c_id,
-                                                     reg_page=1, reg_addr=0x9d,
-                                                     wrdata=0x27)
-                            self.chk.femb_i2c_wrchk(femb_id, chip_addr=c_id,
-                                                     reg_page=1, reg_addr=0x9e,
-                                                     wrdata=0x27)
+                    self.chk.femb_cd_gpio(femb_id=femb_id, cd1_0x26=0x02, cd1_0x27=0x1f,
+                                          cd2_0x26=0x00, cd2_0x27=0x1f)
+                    self.chk.femb_cfg(femb_id, adac_pls_en)
 
                 vold = self.chk.wib_vol_mon(femb_ids=self.fembs, sps=10)
                 label = f"Vin{vin}V_{cfg['name']}"
@@ -1397,6 +1385,7 @@ class QC_Runs:
         mon_fedacs_25mVfC = {}
         #vdacs=range(64)
         vdacs=range(1,64,8)
+        sps = 100
         for mon_chip in range(chips):
             print ("measure chip#%d of all boards..."%mon_chip)
             adcrst = self.chk.wib_fe_dac_mon(femb_ids=self.fembs, mon_chip=mon_chip, sgp=False, sg0=1, sg1=0, vdacs=vdacs, sps=sps)

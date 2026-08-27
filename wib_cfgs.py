@@ -466,14 +466,19 @@ class WIB_CFGS(LLC, FE_ASIC_REG_MAPPING):
     def femb_power_com_on(self, fembs=[]):
         print("Power up COLDATA")
         pwr_meas = self.femb_power_com_step1(fembs)
+        # input('is current up 31?')
+        print(f'step1 test {fembs}')
         if False in self.por:
             self.femb_power_com_off(fembs=[])
+        # input('is current up 32?')
         print("Power up ColdADC")
         pwr_meas = self.femb_power_com_step2(fembs)
+        # input('is current up 33?')
         if False in self.por:
             self.femb_power_com_off(fembs=[])
-        print("Power up LArASIC")
+        print("Power up LArASIC 34")
         pwr_meas = self.femb_power_com_step3(fembs)
+        # input('is current up 35?')
         if False in self.por:
             self.femb_power_com_off(fembs=[])
         return pwr_meas

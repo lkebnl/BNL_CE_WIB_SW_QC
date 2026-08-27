@@ -100,25 +100,55 @@ def open_reports(data_dir):
 
 
 def copy_file_to_network(file_path):
-    """Copy a single new file to network path"""
+    """Copy one file to the network path via an atomic .part temp file.
+
+    Does not wait for the source to finish writing — instead, it snapshots the
+    source size before and after the copy.  If the size changed (file was still
+    being written), the .part file is discarded and False is returned so the
+    caller retries next cycle.
+
+    Returns True on success or when nothing needs doing.
+    Returns False if the copy should be retried next cycle.
+    """
     try:
-        # Skip if network path not configured or same as local
         if not network_path or network_path == top_path:
-            return
+            return True
+        if not file_path.startswith(top_path):
+            return True
 
-        # Extract relative path from top_path
-        if file_path.startswith(top_path):
-            rel_path = os.path.relpath(file_path, top_path)
-            network_file_path = os.path.join(network_path, rel_path)
+        src_size_before = os.path.getsize(file_path)
+        if src_size_before == 0:
+            return False  # file not ready yet
 
-            # Create directory if needed
-            os.makedirs(os.path.dirname(network_file_path), exist_ok=True)
+        rel_path = os.path.relpath(file_path, top_path)
+        network_file_path = os.path.join(network_path, rel_path)
+        os.makedirs(os.path.dirname(network_file_path), exist_ok=True)
 
-            # Copy the file
-            shutil.copy2(file_path, network_file_path)
-            print(f"  Copied to network: {network_file_path}")
+        # Idempotent: skip if an identical-size copy is already there.
+        if os.path.exists(network_file_path) and os.path.getsize(network_file_path) == src_size_before:
+            return True
+
+        # Copy to a .part temp file in the same directory, then atomically rename.
+        tmp_path = network_file_path + ".part"
+        shutil.copy2(file_path, tmp_path)
+
+        # If source grew during the copy, discard and retry next cycle.
+        src_size_after = os.path.getsize(file_path)
+        copied_size = os.path.getsize(tmp_path)
+        if src_size_after != src_size_before or copied_size != src_size_before:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+            print(f"  Size changed during copy (file still writing), will retry: {file_path}")
+            return False
+
+        os.replace(tmp_path, network_file_path)
+        print(f"  Copied to network: {network_file_path}")
+        return True
     except Exception as e:
         print(f"  Network copy failed for {file_path}: {e}")
+        return False
 
 def save_last_scan_results(results):
     with open(last_scan_file, 'w', encoding='utf-8') as f:
@@ -291,6 +321,7 @@ logs = {}
 
 def real_time_monitor():
     previous_files = load_last_scan_results()
+    pending_sync = set()          # files whose network copy failed -> retry next cycle
     while True:
         current_files = set()
         for root, dirs, files in os.walk(target_folder):
@@ -303,12 +334,19 @@ def real_time_monitor():
 
         save_last_scan_results(current_files)
 
+        # ---- network sync: new files + previously-failed ones, with retry ----
+        sync_candidates = new_files | pending_sync
+        for fp in list(sync_candidates):
+            if copy_file_to_network(fp):
+                pending_sync.discard(fp)
+            else:
+                pending_sync.add(fp)   # keep for next cycle
+        # ----------------------------------------------------------------------
+
         for file_path in new_files:
             n = " "
             c = 0
             print(f'new file detected: {file_path}')
-            # Copy new file to network disk immediately
-            copy_file_to_network(file_path)
             if '_S0' in file_path:
                 n += " 0 "
                 c+=1

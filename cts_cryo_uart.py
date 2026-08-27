@@ -123,8 +123,11 @@ class cryobox:
         self.portno = CTS_PORT if CTS_PORT else '/dev/ttyACM1'
         self.ser = None
         self.manual_flg = False
+        self.email_info = None  # set by cryo_create() when caller supplies it
 
     def cryo_create(self, email_info=None):
+        if email_info:
+            self.email_info = email_info  # persist for uart_write error notifications
         while True:
             try:
                 self.ser = serial.Serial(self.portno,  115200, timeout=5, write_timeout=5, parity=serial.PARITY_NONE)
@@ -154,13 +157,14 @@ class cryobox:
 
                     # All 5 attempts failed — send email then ask tester
                     print(Fore.RED + "\nCan't build communication with CTS after 5 attempts." + Style.RESET_ALL)
-                    if EMAIL_AVAILABLE and email_info:
+                    _ei = email_info or self.email_info
+                    if EMAIL_AVAILABLE and _ei:
                         try:
                             send_email.send_email(
-                                email_info['sender'],
-                                email_info['password'],
-                                email_info['receiver'],
-                                f"CTS Connection FAILED - {email_info.get('test_site', 'CTS')}",
+                                _ei['sender'],
+                                _ei['password'],
+                                _ei['receiver'],
+                                f"CTS Connection FAILED - {_ei.get('test_site', 'CTS')}",
                                 f"CTS Cryogenic box connection failed after 5 auto-retry attempts.\n"
                                 f"Port: {self.portno}\nManual intervention required."
                             )
@@ -208,6 +212,19 @@ class cryobox:
                 attempt = 0
                 print(f"Cryo Control Box Unexpected Serial error: {e}")
                 print("Please call the tech coordinator to fix it.")
+                if EMAIL_AVAILABLE and self.email_info:
+                    try:
+                        send_email.send_email(
+                            self.email_info['sender'],
+                            self.email_info['password'],
+                            self.email_info['receiver'],
+                            f"CTS Serial ERROR - {self.email_info.get('test_site', 'CTS')}",
+                            f"CTS Cryogenic box encountered an unexpected serial error after 5 retries.\n"
+                            f"Port: {self.portno}\nError: {e}\nManual intervention required."
+                        )
+                        print(Fore.YELLOW + "📧 Serial error notification email sent." + Style.RESET_ALL)
+                    except Exception as mail_err:
+                        print(Fore.YELLOW + f"⚠️  Failed to send email: {mail_err}" + Style.RESET_ALL)
                 while True:
                     yorn = input("Fixed the issue? (Y/N): ").strip().lower()
                     if yorn == 'y':
@@ -338,11 +355,11 @@ class cryobox:
                 self.manual_flg = True
                 return False
  
-    def cryo_warmgas(self, waitminutes = 1):
+    def cryo_warmgas(self, waitminutes=1, email_info=None):
         if self.manual_flg:
             return False
 
-        if self.cryo_create():
+        if self.cryo_create(email_info=email_info):
             parsed = self.cryo_cmd(mode=b'2')
             parsed = self.cryo_cmd(mode=b'm')
             self.cryo_close()
@@ -354,7 +371,7 @@ class cryobox:
                 allow_skip=True
             )
 
-            if self.cryo_create():
+            if self.cryo_create(email_info=email_info):
                 parsed = self.cryo_cmd(mode=b'1')
                 parsed = self.cryo_cmd(mode=b'm')
                 self.cryo_close()
@@ -364,7 +381,7 @@ class cryobox:
         else:
             return False
 
-    def cryo_warmgas_start(self, waitminutes = 1):
+    def cryo_warmgas_start(self, waitminutes=1, email_info=None):
         """
         Start warm gas mode and return immediately (non-blocking).
         Returns the end timestamp when CTS will be ready.
@@ -375,18 +392,17 @@ class cryobox:
         if self.manual_flg:
             return None
 
-        if self.cryo_create():
+        if self.cryo_create(email_info=email_info):
             parsed = self.cryo_cmd(mode=b'2')
             parsed = self.cryo_cmd(mode=b'm')
             self.cryo_close()
             print(f"CTS Warm Gas started - will be ready in {waitminutes} minutes")
-            # Return the timestamp when CTS will be ready
             ready_time = time.time() + (waitminutes * 60)
             return ready_time
         else:
             return None
 
-    def cryo_warmgas_finish(self):
+    def cryo_warmgas_finish(self, email_info=None):
         """
         Finish warm gas mode by setting CTS to IDLE state.
         Call this after the wait time has elapsed.
@@ -397,7 +413,7 @@ class cryobox:
         if self.manual_flg:
             return False
 
-        if self.cryo_create():
+        if self.cryo_create(email_info=email_info):
             parsed = self.cryo_cmd(mode=b'1')  # Set to IDLE
             parsed = self.cryo_cmd(mode=b'm')
             self.cryo_close()

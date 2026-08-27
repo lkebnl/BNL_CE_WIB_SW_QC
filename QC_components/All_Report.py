@@ -46,6 +46,30 @@ def dict_to_markdown_table(dictionary, KEY = "KEY", VALUE = "RECORD"):
     return table
 
 
+def write_issue_list(file, issue_list, title="Fail Detail", img_dir=None, img_fname=None):
+    if not issue_list:
+        return
+    file.write('\n**{}:**\n\n'.format(title))
+    for issue in issue_list:
+        file.write('- ' + str(issue).strip() + '\n')
+    file.write('\n')
+
+    if img_dir and img_fname:
+        #   pull the failing channel numbers (every issue string starts with
+        #   "ch <n> ...") and embed each channel's standalone debug plot
+        #   (QC_tools.GetGain saves these as fail_gain_ch<n>_<img_fname>.png)
+        seen = set()
+        for issue in issue_list:
+            m = re.match(r'^ch (\d+)\b', str(issue).strip())
+            if not m:
+                continue
+            ch = int(m.group(1))
+            if ch in seen:
+                continue
+            seen.add(ch)
+            file.write('<img src="./{}/fail_gain_ch{}_{}.png" alt="picture" height="230">\n\n'.format(
+                img_dir, ch, img_fname))
+
 
 
 def section_report(datareport, fembs, fembNo, fembsName):
@@ -799,6 +823,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
                     log.item061) + "\n\n")  # width="200"
                 # file.write("![ped](./{}/enc_200mVBL_4_7mVfC_2_0us.png)".format(log.item061) + "![ped](./{}/Line_range_200mVBL_4_7mVfC_2_0us.png)".format(log.item061) + "\n")
                 file.write("![ped](./{}/gain_200mVBL_4_7mVfC_2_0us.png)".format(log.item061) + "\n")
+                if log.check_log0601[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0601[femb_id].get('Issue List', []),
+                                      img_dir="CALI1", img_fname="200mVBL_4_7mVfC_2_0us")
 
                 file.write('### 6_2 Calibration SE 200 mVBL    7_8 mVfC    2 us' + '\n')
                 file.write('<img src="./{}/enc_200mVBL_7_8mVfC_2_0us.png" alt="picture" height="230">'.format(
@@ -807,6 +834,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
                     log.item061) + "\n\n")  # width="200"
                 # file.write("![ped](./{}/enc_200mVBL_7_8mVfC_2_0us.png)".format(log.item061) + "![ped](./{}/Line_range_200mVBL_7_8mVfC_2_0us.png)".format(log.item061) + "\n")
                 file.write("![ped](./{}/gain_200mVBL_7_8mVfC_2_0us.png)".format(log.item061) + "\n")
+                if log.check_log0602[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0602[femb_id].get('Issue List', []),
+                                      img_dir="CALI1", img_fname="200mVBL_7_8mVfC_2_0us")
 
                 file.write('### 6_3 Calibration SE 200 mVBL    14_0 mVfC    2 us' + '\n')
                 file.write('<img src="./{}/enc_200mVBL_14_0mVfC_2_0us.png" alt="picture" height="230">'.format(
@@ -815,6 +845,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
                     log.item061) + "\n\n")  # width="200"
                 # file.write("![ped](./{}/enc_200mVBL_14_0mVfC_2_0us.png)".format(log.item061) + "![ped](./{}/Line_range_200mVBL_14_0mVfC_2_0us.png)".format(log.item061) + "\n")
                 file.write("![ped](./{}/gain_200mVBL_14_0mVfC_2_0us.png)".format(log.item061) + "\n")
+                if log.check_log0603[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0603[femb_id].get('Issue List', []),
+                                      img_dir="CALI1", img_fname="200mVBL_14_0mVfC_2_0us")
 
                 file.write('### 6_4 Calibration SE 200 mVBL    25_0 mVfC    2 us' + '\n')
                 file.write('<img src="./{}/enc_200mVBL_25_0mVfC_2_0us.png" alt="picture" height="230">'.format(
@@ -822,6 +855,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 file.write('<img src="./{}/Line_range_200mVBL_25_0mVfC_2_0us.png" alt="picture" height="230">'.format(
                     log.item061) + "\n\n")  # width="200"
                 file.write("![ped](./{}/gain_200mVBL_25_0mVfC_2_0us.png)".format(log.item061) + "\n")
+                if log.check_log0604[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0604[femb_id].get('Issue List', []),
+                                      img_dir="CALI1", img_fname="200mVBL_25_0mVfC_2_0us")
 
                 # file.write('### 6_5 Calibration DIFF 200 mVBL    14_0 mVfC    2 us' + '\n')
                 # file.write('<img src="./{}/enc_200mVBL_14_0mVfC_2_0us.png" alt="picture" height="230">'.format(
@@ -850,6 +886,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
 
                 # file.write("![ped](./{}/enc_900mVBL_14_0mVfC_2_0us.png)".format(log.item071) + "![ped](./{}/Line_range_900mVBL_14_0mVfC_2_0us.png)".format(log.item071) + "\n")
                 file.write("![ped](./{}/gain_900mVBL_14_0mVfC_2_0us.png)".format(log.item071) + "\n")
+                if log.check_log0701[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0701[femb_id].get('Issue List', []),
+                                      img_dir="CALI2", img_fname="900mVBL_14_0mVfC_2_0us")
                 #DIFF  900 mVBL    14 mVfC     2 us
                 file.write('### Calibration 022 DIFF 900 mVBL    14_0 mVfC    2 us' + '\n')
                 file.write('<img src="./{}/enc_900mVBL_14_0mVfC_2_0us.png" alt="picture" height="230">'.format(
@@ -872,6 +911,8 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 # file.write('<img src="./{}/Line_range_200mVBL_14_0mVfC_2_0us_sgp1.png" alt="picture" height={}>'.format(log.item081, PH) + "\n\n")  # width="200"
                 # file.write("![ped](./{}/enc_200mVBL_4_7mVfC_2_0us_sgp1.png)".format(log.item081) + "![ped](./{}/Line_range_200mVBL_4_7mVfC_2_0us_sgp1.png)".format(log.item081) + "\n")
                 file.write("![ped](./{}/gain_200mVBL_14_0mVfC_2_0us_sgp1.png)".format(log.item081) + "\n")
+                if log.check_log0801[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0801[femb_id].get('Issue List', []))
             # # DIFF  900 mVBL    4_7 mVfC     2 us
             # file.write('### Calibration 022 DIFF 900 mVBL    4_7 mVfC    2 us' + '\n')
             # file.write("![ped](./{}/enc_900mVBL_4_7mVfC_2_0us.png)".format(log.item072) + "![ped](./{}/ped_900mVBL_4_7mVfC_2_0us.png)".format(log.item072) + "\n")
@@ -888,6 +929,8 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 file.write('<img src="./{}/enc_900mVBL_14_0mVfC_2_0us_sgp1.png" alt="picture" height={}>'.format(log.item091, PH) + "\n")  # width="200"
                 file.write('<img src="./{}/Line_range_900mVBL_14_0mVfC_2_0us_sgp1.png" alt="picture" height={}>'.format(log.item091, PH) + "\n\n")  # width="200"
                 file.write("![ped](./{}/gain_900mVBL_14_0mVfC_2_0us_sgp1.png)".format(log.item091) + "\n")
+                if log.check_log0901[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log0901[femb_id].get('Issue List', []))
             # DIFF  900 mVBL    14 mVfC     2 us
             # file.write('### Calibration 022 DIFF 900 mVBL    14_0 mVfC    2 us' + '\n')
             # file.write("![ped](./{}/enc_900mVBL_14_0mVfC_2_0us.png)".format(log.item092) + "![ped](./{}/ped_900mVBL_14_0mVfC_2_0us.png)".format(log.item092) + "\n")
@@ -955,6 +998,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 # file.write("![ped](./{}/enc_900mVBL_14_0mVfC_2_0us.png)".format(log.item13) + "![ped](./{}/Line_range_900mVBL_14_0mVfC_2_0us.png)".format(log.item13) + "\n")
                 file.write("![ped](./{}/gain_900mVBL_14_0mVfC_2_0us.png)".format(log.item13) + "\n")
                 # file.write("![ped](./{}/ped_900mVBL_14_0mVfC_2_0us.png)".format(log.item13) + "\n")
+                if log.check_log1301[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log1301[femb_id].get('Issue List', []),
+                                      img_dir="CALI5", img_fname="900mVBL_14_0mVfC_2_0us")
 
             #   14      Calibration 04:
             if 14 in log.test_label:
@@ -969,6 +1015,9 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 # file.write("![ped](./{}/enc_200mVBL_14_0mVfC_2_0us.png)".format(log.item14) + "![ped](./{}/Line_range_200mVBL_14_0mVfC_2_0us.png)".format(log.item14) + "\n")
                 file.write("![ped](./{}/gain_200mVBL_14_0mVfC_2_0us.png)".format(log.item14) + "\n")
                 # file.write("![ped](./{}/ped_200mVBL_14_0mVfC_2_0us.png)".format(log.item14) + "\n")
+                if log.check_log1401[femb_id]['Result'] == False:
+                    write_issue_list(file, log.check_log1401[femb_id].get('Issue List', []),
+                                      img_dir="CALI6", img_fname="200mVBL_14_0mVfC_2_0us")
 
 # 15        print <ADC_DC noise measurement>
             # 12_01
@@ -1017,17 +1066,14 @@ def section_report(datareport, fembs, fembNo, fembsName):
                 file.write("------\n")
                 file.write('Regulator output voltages at 4 Vin × 3 ASIC configurations (12 sets)\n\n')
                 file.write('Configs: FE SE off / ADC SE off (baseline) · FE SE on / ADC SE on (CMOS ref) · FE SDD on / DIFF on (CMOS ref)\n\n')
+                file.write("![Regulator Output Monitor](./{}/Power_Rail_vs_Config.png)\n\n".format(log.item17))
 
                 # Build a compact table: rows = power-rail names, columns = 12 Vin+Config combos
                 # Collect all labels and rail names from the first FEMB
                 mon_data = log.report_log1701.get(femb_id, {})
                 if mon_data:
                     labels = list(mon_data.keys())
-                    # Shorten column headers for readability
-                    short_labels = [lbl.replace('FEseo_ADCseo_DIFFo', 'SE_off')
-                                       .replace('FEsen_ADCsen_DIFFo', 'SE_on')
-                                       .replace('FEsddn_ADCseo_DIFFn', 'DIFF_on')
-                                    for lbl in labels]
+                    short_labels = labels
                     # Collect rail names from first column
                     rail_names = list(mon_data[labels[0]].keys()) if labels else []
 

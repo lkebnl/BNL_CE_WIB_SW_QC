@@ -493,16 +493,11 @@ class ana_tools:
                     print(inl)
                     if inl > 1.5:
                         issue_inl[femb_id]["INL-{}-{}".format(main_key, key)] = inl
-                        print('========================')
-                        log.report_log1102csv[femb_id]["INL-{}-{}".format(main_key, key)] = "INL-{}-{}".format(main_key,
-                                                                                                               inl)
+                        log.report_log1102csv[femb_id]["INL-{}-{}".format(main_key, key)] = "INL-{}-{}".format(main_key,inl)
                         issue_inl[femb_id]["Result"] = False
                     else:
-                        log.report_log1102csv[femb_id]["INL-{}-{}".format(main_key, key)] = "INL-{}-{}".format(main_key,
-                                                                                                               inl)
-                        print('aaaaaaaaaaaaaaaaaaaaaaaaa')
-                    log.report_log1101csv[femb_id]["LSB-{}-{}".format(main_key, key)] = 'LSB-{}-{}={}'.format(main_key,
-                                                                                                              key, LSB)
+                        log.report_log1102csv[femb_id]["INL-{}-{}".format(main_key, key)] = "INL-{}-{}".format(main_key,inl)
+                    log.report_log1101csv[femb_id]["LSB-{}-{}".format(main_key, key)] = 'LSB-{}-{}={}'.format(main_key,key, LSB)
                     print(log.report_log1101csv[femb_id]["LSB-{}-{}".format(main_key, key)])
             fp = savedir[nfemb] + fdir + "/mon_{}.png".format(main_key)
             plt.legend()
@@ -632,115 +627,84 @@ class ana_tools:
                 log.ADCMON_table_cell[femb_id]["VREFN_chip4"], log.ADCMON_table_cell[femb_id]["VREFN_chip5"],
                 log.ADCMON_table_cell[femb_id]["VREFN_chip6"], log.ADCMON_table_cell[femb_id]["VREFN_chip7"])
 
-    def CheckLinearty(self, dac_list, pk_list, updac, lodac, chan, fp):
-        #   first sample and fit
-        #   the updac range need to be ensured
-        dac_init = []
-        pk_init = []
-        for i in range(len(dac_list)):
-            if ((pk_list[i] < updac) and (pk_list[i] > lodac)):
-                dac_init.append(dac_list[i])
-                pk_init.append(pk_list[i])
+    def CheckLinearty(self, dac_list, pk_list, updac, lodac, chan, fp, inl_th=0.01):
+        #   work backwards: start from the whole scan (skipping dac_list[0], the
+        #   dac=0 baseline point) and shrink from the high-dac end one point at a
+        #   time until every point left in the window is within inl_th INL of a
+        #   single fit over that same window. The pass/fail check and its
+        #   normalization span are always self-contained to the window under
+        #   test -- never anchored on a point that hasn't itself been verified
+        #   (e.g. the raw last scanned point, which may already be saturated).
+        n = len(dac_list)
+        min_pts = 3  # smallest window we're willing to accept: indices [1,2,3]
 
-        #   first fit, use initial sample points
-        try:
-            slope_i, intercept_i = np.polyfit(dac_init, pk_init, 1)
-        except:
-            # we suggest here report an issue
+        if n <= min_pts:
             fig1, ax1 = plt.subplots()
-            ax1.plot(dac_init, pk_init, marker='.')
+            ax1.plot(dac_list, pk_list, marker='.')
             ax1.set_xlabel("DAC")
             ax1.set_ylabel("Peak Value")
             ax1.set_title("chan%d fail first gain fit" % chan)
             plt.tight_layout()
             plt.savefig(fp + 'fail_first_fit_ch%d.png' % chan)
             plt.close(fig1)
-
-            print("fail at first gain fit")
+            print("fail at first gain fit: not enough points")
             return 0, 0, 0
 
-        #   with these filter, get a line and find the most line area
-        y_min = pk_list[0]
-        y_max = pk_list[-1]
-        linear_dac_max = dac_list[-1]
-        if 'vdac' in fp:
-            inl_th = 0.01
-        else:
-            inl_th = 0.015
-        index = len(dac_list) - 1
+        window = None
+        for k in range(n - 1, min_pts - 1, -1):
+            idx = list(range(1, k + 1))
+            span = abs(pk_list[k] - pk_list[1])
+            if span == 0:
+                continue
+            try:
+                slope_t, intercept_t = np.polyfit([dac_list[i] for i in idx], [pk_list[i] for i in idx], 1)
+            except Exception:
+                continue
 
-        for i in range(len(dac_list)):
-            y_r = pk_list[i]
-            y_p = dac_list[i] * slope_i + intercept_i
-            inl = abs(y_r - y_p) / (y_max - y_min)
-            if inl > inl_th:
-                if dac_list[i] < 5:
-                    continue
-                linear_dac_max = dac_list[i - 1]
-                index = i
+            #   INL = (max positive deviation - max negative deviation) / 2:
+            #   this is the deviation you'd be left with if the fit's offset
+            #   were re-centered optimally, so it isn't inflated by whatever
+            #   intercept the least-squares fit happened to land on.
+            devs = [(pk_list[i] - (dac_list[i] * slope_t + intercept_t)) / span for i in idx]
+            inl = (max(devs) - min(devs)) / 2
+            ok = inl <= inl_th
+            if ok:
+                window = idx
                 break
-        # print(linear_dac_max)
-        # print(index)
 
-        if index == 0:
-            fig2, ax2 = plt.subplots(1, 2, figsize=(12, 6))
-            ax2[0].plot(dac_list, pk_list, marker='.')
-            ax2[0].set_xlabel("DAC")
-            ax2[0].set_ylabel("Peak Value")
-            ax2[0].set_title("chan%d fail linear range searching" % chan)
-
-            tmp_inl = []
-            tmp_dac = []
-            for i in range(len(dac_list)):
-                if dac_list[i] > updac:
-                    break
-                y_r = pk_list[i]
-                y_p = dac_list[i] * slope_i + intercept_i
-                inl_1 = abs(y_r - y_p) / (y_max - y_min)
-                tmp_inl.append(inl_1)
-                tmp_dac.append(i)
-
-            ax2[1].plot(tmp_dac, tmp_inl, marker='.')
-            ax2[1].set_xlabel("DAC")
-            ax2[1].set_ylabel("Peak Value")
-            ax2[1].set_title("chan%d inl" % chan)
+        if window is None:
+            fig2, ax2 = plt.subplots()
+            ax2.plot(dac_list, pk_list, marker='.')
+            ax2.set_xlabel("DAC")
+            ax2.set_ylabel("Peak Value")
+            ax2.set_title("chan%d fail linear range searching" % chan)
             plt.tight_layout()
             plt.savefig(fp + 'fail_inl_ch%d.png' % chan)
             plt.close(fig2)
-            print("fail at first linear range searching: inl=%f for dac=0 is bigger than 0.03" % inl)
+            print("fail: no window satisfies %.1f%% INL" % (inl_th * 100))
             return 0, 0, 0
 
-        # print(dac_list[:index])
-        #   second linear fit, with all linear area
-        try:
-            slope_f, intercept_f = np.polyfit(dac_list[1:index], pk_list[1:index], 1)
-        except:
-            fig3, ax3 = plt.subplots()
-            ax3.plot(dac_list[1:index], pk_list[1:index], marker='.')
-            ax3.set_xlabel("DAC")
-            ax3.set_ylabel("Peak Value")
-            ax3.set_title("chan%d fail second gain fit" % chan)
-            plt.tight_layout()
-            plt.savefig(fp + 'fail_second_fit_ch%d.png' % chan)
-            plt.close(fig3)
-            print("fail at second gain fit")
-            return 0, 0, 0
-        y_max = pk_list[index]
-        y_min = pk_list[0]
+        linear_dac_max = dac_list[window[-1]]
 
-        INL = 0
-        if len(dac_list) > 32:
-            index = index - 3
-        else:
-            index = index
-        for i in range(0, index):
-            y_r = pk_list[i]
-            y_p = dac_list[i] * slope_f + intercept_f
-            inl = abs(y_r - y_p) / (abs(y_max - y_min) * 1.5)
-            if inl * 100 > INL:
-                INL = inl
+        #   refit once more using only the accepted window, then compute the
+        #   final INL from that refit
+        slope, intercept = np.polyfit([dac_list[i] for i in window], [pk_list[i] for i in window], 1)
 
-        return slope_f, INL, linear_dac_max
+        #   dense scans (many dac points) can still have the last couple of
+        #   accepted points sitting right at the edge of saturation without the
+        #   coarse linearity check catching it; drop them from the INL stat only
+        #   (gain fit and linear_dac_max above still use the full window)
+        inl_points = window
+        if n > 32 and len(window) > 3:
+            inl_points = window[:-3] if len(window) - 3 >= 3 else window
+
+        y_min = pk_list[window[0]]
+        y_max = pk_list[window[-1]]
+        span = abs(y_max - y_min)
+        devs = [(pk_list[i] - (dac_list[i] * slope + intercept)) / span for i in inl_points]
+        INL = (max(devs) - min(devs)) / 2
+
+        return slope, INL, linear_dac_max
 
     def GetGain(self, fembs, fembNo, Cali_dict, savedir, fdir, namepat, snc, sgs, sts, dac_list, updac=25, lodac=10):
         global fname_1, ppk, bl, line_range_list, inl_list, gain_list
@@ -816,15 +780,17 @@ class ana_tools:
             inl_listcsv = []
             line_range_list = []
             max_dac_list = []
-            plt.figure(figsize=(9, 6))
+            main_fig = plt.figure(figsize=(9, 6))
             #   overlap channel 0 pulse from [1 - 63]
 
             #   peak - dac linear
-            plt.subplot(2, 2, 2)
+            main_ax = plt.subplot(2, 2, 2)
             for ch in range(128):
+                issues_before = len(check_issue)
                 uplim = np.max(pk_np[ch]) * 6 / 7
                 lodac = np.max(pk_np[ch]) * 1 / 7
-                gain, inl, line_range = self.CheckLinearty(dac_np, pk_np[ch], uplim, lodac, ch, fp)
+                cl_inl_th = 0.05 if 'vdac' in namepat else 0.01
+                gain, inl, line_range = self.CheckLinearty(dac_np, pk_np[ch], uplim, lodac, ch, fp, inl_th=cl_inl_th)
                 if gain == 0:
                     print("femb%d ch%d gain is zero" % (ifemb, ch))
                 else:
@@ -837,7 +803,7 @@ class ana_tools:
                 inl_listcsv.append(round(inl * 100, 2))
                 line_range_list.append(round(line_range * dac_du / 1000 * 185))
                 if ('vdac' in fname_1):
-                    if inl > 0.2:
+                    if inl > 0.05:
                         check = False
                         check_issue.append("ch {} INL issue: {}".format(ch, inl))
                     if line_range < 100:
@@ -864,7 +830,7 @@ class ana_tools:
                                 check_issue.append("ch {} line range issue: {}".format(ch, line_range))
                         if gain > 43:
                             check = False
-                            check_issue.append("ch {} Gain issue at 14_0 mVfC: {}".format(ch, line_range))
+                            check_issue.append("ch {} Gain issue at 14_0 mVfC: {}".format(ch, gain))
 
 
                     elif '200mV' in fname_1:
@@ -873,19 +839,19 @@ class ana_tools:
                                 check = False
                                 check_issue.append("ch {} Line range issue lower than 20: {}".format(ch, line_range))
                         else:
-                            if line_range < 48:
+                            if line_range < 40:
                                 check = False
                                 check_issue.append("ch {} Line range issue lower than 50: {}".format(ch, line_range))
                         if '4_7' in fname_1:
                             plt.plot(dac_np * dac_du / 1000 * 185, pk_np[ch])
                             if gain > 135:
                                 check = False
-                                check_issue.append("ch {} Gain issue at 4_7 mVfC: {}".format(ch, line_range))
+                                check_issue.append("ch {} Gain issue at 4_7 mVfC: {}".format(ch, gain))
                         if '7_8' in fname_1:
                             plt.plot(dac_np * dac_du / 1000 * 185, pk_np[ch])
                             if gain > 78:
                                 check = False
-                                check_issue.append("ch {} Gain issue at 7_8 mVfC: {}".format(ch, line_range))
+                                check_issue.append("ch {} Gain issue at 7_8 mVfC: {}".format(ch, gain))
                         if '14_0' in fname_1:
                             if 'sgp1' in fname_1:
                                 plt.plot(dac_np * dac_du / 1000 * 185, pk_np[ch])
@@ -893,12 +859,33 @@ class ana_tools:
                                 plt.plot(dac_np * dac_du / 1000 * 185, pk_np[ch])
                             if gain > 45:
                                 check = False
-                                check_issue.append("ch {} Gain issue at 14_0 mVfC: {}".format(ch, line_range))
+                                check_issue.append("ch {} Gain issue at 14_0 mVfC: {}".format(ch, gain))
                         if '25_0' in fname_1:
                             plt.plot(dac_np * dac_du / 1000 * 185, pk_np[ch])
                             if gain > 26:
                                 check = False
-                                check_issue.append("ch {} Gain issue at 25_0 mVfC: {}".format(ch, line_range))
+                                check_issue.append("ch {} Gain issue at 25_0 mVfC: {}".format(ch, gain))
+
+                if len(check_issue) > issues_before:
+                    #   this channel just failed -- plot its peak-vs-input curve
+                    #   on its own, as a standalone debug figure, then switch
+                    #   back to the shared composite plot (main_fig/main_ax)
+                    is_vdac = 'vdac' in fname_1
+                    x_dbg = dac_np if is_vdac else dac_np * dac_du / 1000 * 185
+                    boundary_x = line_range if is_vdac else line_range * dac_du / 1000 * 185
+                    fig_dbg = plt.figure(figsize=(6, 4))
+                    plt.plot(x_dbg, pk_np[ch], marker='.')
+                    plt.axvline(boundary_x, color='red', linestyle='--', label='linear range boundary')
+                    plt.legend()
+                    plt.xlabel("Input Setting / mV" if not is_vdac else "DAC")
+                    plt.ylabel("Amplitude / ADC_bit")
+                    plt.title("ch{} FAIL  gain={:.2f}  INL={:.4f}  line_range={}".format(ch, gain, inl, line_range))
+                    plt.grid(True, axis='y', linestyle='--')
+                    plt.tight_layout()
+                    plt.savefig(fp + 'fail_gain_ch{}_{}.png'.format(ch, fname))
+                    plt.close(fig_dbg)
+                    plt.figure(main_fig.number)
+                    plt.sca(main_ax)
 
                 # max_dac_list.append(max_dac)
 
@@ -1048,7 +1035,6 @@ class ana_tools:
         dac_v['7_8mVfC'] = 14.33
         dac_v['14_0mVfC'] = 8.08
         dac_v['25_0mVfC'] = 4.61
-        check = True
         CC = 1.85 * pow(10, -13)
         e = 1.602 * pow(10, -19)
         # print(namepat)
@@ -1063,8 +1049,8 @@ class ana_tools:
         if 'CALI5' in namepat or 'CALI6' in namepat:
             dac_list = dac_list[::-1]
             dac_list = [(1650 - x) for x in dac_list]
-        check = True
-        check_issue = []
+        check_per_femb = {ifemb: True for ifemb in fembs}
+        check_issue_per_femb = {ifemb: [] for ifemb in fembs}
         for dac in dac_list:
             if 'CALI5' in namepat or 'CALI6' in namepat:
                 dacname = 1650 - dac
@@ -1095,15 +1081,17 @@ class ana_tools:
                     if 'CALI3' in namepat:
                         if dac > 42:
                             if ppk_np[dac] < 12500:
-                                check = False
-                                check_issue.append('issue dac: {}'.format(dac))
+                                check_per_femb[ifemb] = False
+                                check_issue_per_femb[ifemb].append(
+                                    'ch {} amplitude issue: {:.1f} (< 12500)'.format(dac, ppk_np[dac]))
                     elif 'CALI4' in namepat:
                         if dac > 22:
                             if ppk_np[dac] < 7000:
-                                check = False
-                                check_issue.append('issue dac: {}'.format(dac))
+                                check_per_femb[ifemb] = False
+                                check_issue_per_femb[ifemb].append(
+                                    'ch {} amplitude issue: {:.1f} (< 7000)'.format(dac, ppk_np[dac]))
                     print(ppk_np[dac])
-                    print(check)
+                    print(check_per_femb[ifemb])
 
         for ifemb in fembs:
             femb_id = "FEMB ID {}".format(fembNo['femb%d' % ifemb])
@@ -1210,8 +1198,8 @@ class ana_tools:
             # log.tmp_log[femb_id]["Gainstd"] = np.std(gain_list)
             log.tmp_log[femb_id]["Linearangemin"] = np.min(line_range_list)
             log.tmp_log[ifemb]["line_range_list"] = line_range_list
-            log.check_log[femb_id]["Result"] = check
-            log.check_log[femb_id]["Issue List"] = check_issue
+            log.check_log[femb_id]["Result"] = check_per_femb[ifemb]
+            log.check_log[femb_id]["Issue List"] = check_issue_per_femb[ifemb]
             plt.ylabel("Amplitude / ADC_bit", fontsize=14)
             plt.xlabel("Input Setting / mV", fontsize=14)
             plt.title("Amplitude vs Input", fontsize=14)

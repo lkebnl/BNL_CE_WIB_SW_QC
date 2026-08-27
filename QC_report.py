@@ -293,11 +293,11 @@ class QC_reports:
             # a_func.monitor_power_rail_analysis("SE_OFF", self.fembs, monvols, self.fembsID, '02_{} SE ON Power Rail'.format(i),
             #                                    NewWIB=self.NewWIB)
             pldata = qc.data_decode(rawdata, self.fembs)
-            for ifemb in self.fembs:
-                femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % self.fembs[ifemb]])
+            for idx, ifemb in enumerate(self.fembs):
+                femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
                 fp_pwr = self.savedir[ifemb] + "PWR_Cycle/PWR_cycle{}_SE_200mVBL_14_0mVfC_2_0us_pwr_meas".format(i)
                 qc.PrintPWR(pwr_meas, ifemb, fp_pwr)
-                a_func.power_ana(self.fembs, ifemb, femb_id, pwr_meas, self.logs['env'],
+                a_func.power_ana(self.fembs, idx, femb_id, pwr_meas, self.logs['env'],
                                  '02 SE OFF Power Consumption Cycle{}'.format(i))
                 check1 = dict(log.check_log)
                 tmp1 = dict(log.tmp_log)
@@ -308,11 +308,11 @@ class QC_reports:
         pwr_meas = pwr_cycle_dict["PWR_DIFF_200mVBL_14_0mVfC_2_0us_0x00.bin"][1]
         rawdata = pwr_cycle_dict["PWR_DIFF_200mVBL_14_0mVfC_2_0us_0x20_pulse.bin"][0]
         pldata = qc.data_decode(rawdata, self.fembs)
-        for ifemb in self.fembs:
-            femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % self.fembs[ifemb]])
+        for idx, ifemb in enumerate(self.fembs):
+            femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
             fp_pwr = self.savedir[ifemb] + "PWR_Cycle/PWR_DIFF_200mVBL_14_0mVfC_2_0us_pwr_meas"
             qc.PrintPWR(pwr_meas, ifemb, fp_pwr)
-            a_func.power_ana(self.fembs, ifemb, femb_id, pwr_meas, self.logs['env'],
+            a_func.power_ana(self.fembs, idx, femb_id, pwr_meas, self.logs['env'],
                              '02 DIFF Power Consumption Cycle{}'.format(i))
             check1 = dict(log.check_log)
             tmp1 = dict(log.tmp_log)
@@ -324,11 +324,11 @@ class QC_reports:
         pwr_meas = pwr_cycle_dict["PWR_SE_SDF_200mVBL_14_0mVfC_2_0us_0x00.bin"][1]
         rawdata = pwr_cycle_dict["PWR_SE_SDF_200mVBL_14_0mVfC_2_0us_0x20_pulse.bin"][0]
         pldata = qc.data_decode(rawdata, self.fembs)
-        for ifemb in self.fembs:
-            femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % self.fembs[ifemb]])
+        for idx, ifemb in enumerate(self.fembs):
+            femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
             fp_pwr = self.savedir[ifemb] + "PWR_Cycle/PWR_SE_SDF_200mVBL_14_0mVfC_2_0us_pwr_meas"
             qc.PrintPWR(pwr_meas, ifemb, fp_pwr)
-            a_func.power_ana(self.fembs, ifemb, femb_id, pwr_meas, self.logs['env'],
+            a_func.power_ana(self.fembs, idx, femb_id, pwr_meas, self.logs['env'],
                              '02 SE ON Power Consumption Cycle{}'.format(i))
             check1 = dict(log.check_log)
             tmp1 = dict(log.tmp_log)
@@ -2125,6 +2125,36 @@ class QC_reports:
                     log.check_log1701[femb_id]['Issue List'].extend(
                         chk_report[femb_id].get('Issue List', [])
                     )
+
+        # Plot: voltage per power rail across the 12 Vin x config combinations,
+        # one figure per FEMB, saved into that FEMB's REG_MON report folder.
+        labels = list(measurements.keys())
+        for ifemb in self.fembs:
+            femb_id = "FEMB ID {}".format(self.fembsID['femb%d' % ifemb])
+            rail_series = {}
+            for label in labels:
+                for rail, val in log.report_log1701[femb_id][label].items():
+                    s = str(val)
+                    if '<span' in s:
+                        s = s.split('>')[1].split('<')[0]
+                    rail_series.setdefault(rail, []).append(float(s.strip()))
+
+            plt.figure(figsize=(14, 6))
+            n_rails = len(rail_series)
+            width = 0.8 / n_rails
+            x = np.arange(len(labels))
+            for i, (rail, y) in enumerate(rail_series.items()):
+                offset = (i - (n_rails - 1) / 2) * width
+                plt.bar(x + offset, y, width=width, label=rail, edgecolor='k', linewidth=0.3, zorder=3)
+            plt.xticks(x, labels, rotation=45, ha='right', fontsize=8)
+            plt.ylabel('Voltage (mV)')
+            plt.title(f'Regulator Output Monitor - {femb_id}')
+            plt.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0), fontsize=8)
+            plt.grid(True, axis='y', linestyle='--', zorder=0)
+            plt.tight_layout()
+            plt.gca().set_facecolor('none')
+            plt.savefig(self.savedir[ifemb] + "REG_MON/" + 'Power_Rail_vs_Config.png', transparent=True)
+            plt.close()
 
 if __name__ == '__main__':
 

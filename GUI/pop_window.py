@@ -417,7 +417,7 @@ def show_disassembly_validation_popup(
         # Original ID (left side)
         orig_label = tk.Label(
             grid_frame,
-            text=orig_value,
+            text='Detail',
             font=("Arial", font_size_medium, "bold"),
             fg='#2C3E50',
             bg='#f0f0f0',
@@ -530,7 +530,7 @@ def show_assembly_scan_popup(
 
     _VALID_FEMB_BOARDS = [
         'IO-1865-1J', 'IO-1865-1K', 'IO-1865-1L', 'IO-1865-1G',
-        'IO-1826-1J', 'IO-1826-1K', 'IO-1826-1G',
+        'IO-1826-1J', 'IO-1826-1K', 'IO-1826-1L', 'IO-1826-1G',
         'IO-1865-1D', 'IO-1865-1E', 'IO-1865-1I', 'IO-1865-1H',
         'IO-1826-1D', 'IO-1826-1E', 'IO-1826-1I', 'IO-1826-1H',
         'IO-1865-1M', 'IO-1865-1N', 'IO-1865-1O', 'IO-1865-1P',
@@ -769,8 +769,8 @@ def show_assembly_scan_popup(
     for i, key in enumerate(key_order[:-1]):
         next_key = key_order[i + 1]
         entries[key].bind('<Return>', lambda _evt, nk=next_key: entries[nk].focus_set())
-    entries['femb_id_2'].bind('<Return>', lambda _evt: on_submit())
-
+    # entries['femb_id_2'].bind('<Return>', lambda _evt: on_submit())
+    entries['femb_id_2'].bind('<Return>', lambda _evt: submit_btn.focus_set())
     # === IMAGE CONTAINER — fills all remaining height ===
     img_container = tk.Frame(main_frame, bg='#2C3E50')
     img_container.pack(fill='both', expand=True)

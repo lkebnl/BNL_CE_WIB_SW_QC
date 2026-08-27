@@ -607,7 +607,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
                 "ssh", "root@192.168.121.123",
                 f"cd BNL_CE_WIB_SW_QC; python3 top_femb_powering_LN.py {power_en}"
             ]
-            ln_result = subrun(ln_command, timeout=120, out=True)  # Display output
+            ln_result = subrun(ln_command, timeout=180, out=True)  # Display output
             time.sleep(2)
             print("FEMB Cold Power On")
             ln_result = ln_result.stdout
@@ -619,7 +619,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
             "ssh", "root@192.168.121.123",
             f"cd BNL_CE_WIB_SW_QC; python3 top_femb_powering.py {power_en}"
         ]
-        result = subrun(command, timeout=120, out=True)  # Display output
+        result = subrun(command, timeout=180, out=True)  # Display output
 
         # Extract stdout for checking
         if hasattr(result, 'stdout'):
@@ -1016,7 +1016,7 @@ def cts_ssh_FEMB(root=None, QC_TST_EN=0, input_info=None, email_info=None):
         WIB_CHK_DIR = "/home/root/BNL_CE_WIB_SW_QC/CHK/"
         WIB_REPORT_DIR = "/home/root/BNL_CE_WIB_SW_QC/CHK/Report/"
         WIB_LNP_DIR = "/home/root/BNL_CE_WIB_SW_QC/tmp_ln/"
-        CHECKOUT_TIMEOUT = 200
+        CHECKOUT_TIMEOUT = 300
         SCP_TIMEOUT = 10
         MAX_RETRIES = 3
         VALID_SLOTS = ['0', '1', '2', '3']

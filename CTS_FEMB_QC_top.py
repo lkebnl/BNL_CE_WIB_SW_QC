@@ -64,7 +64,7 @@ def print_status(status_type, message):
 
 _VALID_FEMB_BOARDS = [
     'IO-1865-1J', 'IO-1865-1K', 'IO-1865-1L', 'IO-1865-1G',
-    'IO-1826-1J', 'IO-1826-1K', 'IO-1865-1L', 'IO-1826-1G',
+    'IO-1826-1J', 'IO-1826-1K', 'IO-1826-1L', 'IO-1826-1G',
     'IO-1865-1D', 'IO-1865-1E', 'IO-1865-1I', 'IO-1865-1H',
     'IO-1826-1D', 'IO-1826-1E', 'IO-1826-1I', 'IO-1826-1H',
     'IO-1865-1M', 'IO-1865-1N', 'IO-1865-1O', 'IO-1865-1P',
@@ -501,7 +501,7 @@ sender = cts_config.get('Email_Sender', 'bnlr216@gmail.com')
 password = cts_config.get('Email_Password', 'vvef tosp minf wwhf')
 send_email.set_email_mode(cts_config.get('email_mode', 'on').strip().lower() == 'on')
 confirm_function("Please confirm that the TERMINAL 'CTS Monitor' has been launched")
-shifter_log_url = cts_config.get('Shifter_Log_URL', "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.rqq2khceqgk2")
+shifter_log_url = cts_config.get('Shifter_Log_URL', "https://docs.google.com/document/d/1Eaa8iv3Nb6AcCbxcXl-iK9pYBfZ5Rx7T7D97M3HINTU/edit?tab=t.jtcv6zlsz1tq#heading=h.kefll287v4wn")
 print(f"Please open shifter log link in Chrome: {shifter_log_url}")
 try:
     chrome_path = webbrowser.get('google-chrome')
