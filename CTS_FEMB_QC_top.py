@@ -2365,7 +2365,7 @@ if 4 in state_list and not goto_disassembly:
         #     print_status('error', "Invalid input. Please enter 'y', 's', or 'e'")
 
     # Warm Up CTS - Direct control without notices
-    print_status('info', f"CTS warm-up starting (~{cts_warmup_wait//60} min)")
+    print_status('info', f"CTS warm-up starting (~{cts_warmup_wait//60} min) [Don't open cover, the LN2 is dangerous!]")
 
     if cryo_auto_mode:
         # Automatic CTS Warm-up - direct control
