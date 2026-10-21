@@ -288,7 +288,7 @@ def rms_ped_ana(rms_rawdata, fembs, fembNo, datareport, fname):
         baseline_err_status = tmp[1]
         # log.report_log04[femb_id]["PED 128-CH std"] = tmp[2]
 
-        tmp = QC_check.CHKPulse(rms)
+        tmp = QC_check.CHKPulse(rms, 0.42)
         log.chkflag["RMS"]=(tmp[0])
         log.badlist["RMS"]=(tmp[1])
         rms_err_flag = tmp[0]
