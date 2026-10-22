@@ -21,6 +21,7 @@ import QC_components.qc_a_function as a_func
 import QC_components.qc_log as log
 import QC_components.All_Report as a_repo
 import QC_components.QC_CSV_Report as csv_repo
+import QC_components.rms_plot as rms_plot
 # use webbrowser to show the issue report
 import webbrowser
 import QC_components.qc_log as main_dict
@@ -644,13 +645,13 @@ class QC_reports:
                                     log.check_log04_01_2520[femb_id]["ppk_std"],
                                     log.check_log04_01_2530[femb_id]["ppk_std"]]
 
-            plt.errorbar(x, SE_200_4_7mV_ppk, yerr=SE_200_4_7mV_ppkerr, color='darkred', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_4_7mV_ppk, yerr=SE_200_4_7mV_ppkerr, color=rms_plot.GAIN_COLOR['4_7'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_4_7mV_ppk')
-            plt.errorbar(x, SE_200_7_8mV_ppk, yerr=SE_200_7_8mV_ppkerr, color='darkorange', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_7_8mV_ppk, yerr=SE_200_7_8mV_ppkerr, color=rms_plot.GAIN_COLOR['7_8'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_7_8mV_ppk')
-            plt.errorbar(x, SE_200_14_0mV_ppk, yerr=SE_200_14_0mV_ppkerr, color='darkgreen', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_14_0mV_ppk, yerr=SE_200_14_0mV_ppkerr, color=rms_plot.GAIN_COLOR['14_0'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_14_0mV_ppk')
-            plt.errorbar(x, SE_200_25_0mV_ppk, yerr=SE_200_25_0mV_ppkerr, color='darkblue', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_25_0mV_ppk, yerr=SE_200_25_0mV_ppkerr, color=rms_plot.GAIN_COLOR['25_0'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_25_0mV_ppk')
             plt.legend()
             plt.xlabel("Peaking Time", fontsize=12)
@@ -740,29 +741,29 @@ class QC_reports:
                                     log.check_log04_02_2510[femb_id]["npk_std"],
                                     log.check_log04_02_2520[femb_id]["npk_std"],
                                     log.check_log04_02_2530[femb_id]["npk_std"]]
-            plt.errorbar(x, SE_200_4_7mV_ppk, yerr=SE_200_4_7mV_ppkerr, color='#FF6666', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_4_7mV_ppk, yerr=SE_200_4_7mV_ppkerr, color=rms_plot.GAIN_COLOR['4_7'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_4_7mV_ppk')
-            plt.errorbar(x, SE_200_7_8mV_ppk, yerr=SE_200_7_8mV_ppkerr, color='#FFA07A', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_7_8mV_ppk, yerr=SE_200_7_8mV_ppkerr, color=rms_plot.GAIN_COLOR['7_8'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_7_8mV_ppk')
-            plt.errorbar(x, SE_200_14_0mV_ppk, yerr=SE_200_14_0mV_ppkerr, color='#90EE90', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_14_0mV_ppk, yerr=SE_200_14_0mV_ppkerr, color=rms_plot.GAIN_COLOR['14_0'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_14_0mV_ppk')
-            plt.errorbar(x, SE_200_25_0mV_ppk, yerr=SE_200_25_0mV_ppkerr, color='#ADD8E6', linestyle='-', capsize=5,
+            plt.errorbar(x, SE_200_25_0mV_ppk, yerr=SE_200_25_0mV_ppkerr, color=rms_plot.GAIN_COLOR['25_0'], linestyle='-', capsize=5,
                          alpha=0.7, label='SE_200_25_0mV_ppk')
-            plt.errorbar(x, SE_900_4_7mV_ppk, yerr=SE_900_4_7mV_ppkerr, capsize=5, color='darkred', linestyle='--',
+            plt.errorbar(x, SE_900_4_7mV_ppk, yerr=SE_900_4_7mV_ppkerr, capsize=5, color=rms_plot.GAIN_COLOR['4_7'], linestyle='--',
                          alpha=0.7, label='SE_900_4_7mV_ppk')
-            plt.errorbar(x, SE_900_4_7mV_npk, yerr=SE_900_4_7mV_npkerr, capsize=5, color='darkred', linestyle='--',
+            plt.errorbar(x, SE_900_4_7mV_npk, yerr=SE_900_4_7mV_npkerr, capsize=5, color=rms_plot.GAIN_COLOR['4_7'], linestyle='-.',
                          alpha=0.7, label='SE_900_4_7mV_npk')
-            plt.errorbar(x, SE_900_7_8mV_ppk, yerr=SE_900_7_8mV_ppkerr, capsize=5, color='darkorange', linestyle='--',
+            plt.errorbar(x, SE_900_7_8mV_ppk, yerr=SE_900_7_8mV_ppkerr, capsize=5, color=rms_plot.GAIN_COLOR['7_8'], linestyle='--',
                          alpha=0.7, label='SE_900_7_8mV_ppk')
-            plt.errorbar(x, SE_900_7_8mV_npk, yerr=SE_900_7_8mV_npkerr, capsize=5, color='darkorange', linestyle='--',
+            plt.errorbar(x, SE_900_7_8mV_npk, yerr=SE_900_7_8mV_npkerr, capsize=5, color=rms_plot.GAIN_COLOR['7_8'], linestyle='-.',
                          alpha=0.7, label='SE_900_7_8mV_npk')
-            plt.errorbar(x, SE_900_14_0mV_ppk, yerr=SE_900_14_0mV_ppkerr, capsize=5, color='darkgreen', linestyle='--',
+            plt.errorbar(x, SE_900_14_0mV_ppk, yerr=SE_900_14_0mV_ppkerr, capsize=5, color=rms_plot.GAIN_COLOR['14_0'], linestyle='--',
                          alpha=0.7, label='SE_900_14_0mV_ppk')
-            plt.errorbar(x, SE_900_14_0mV_npk, yerr=SE_900_14_0mV_npkerr, capsize=5, color='darkgreen', linestyle='--',
+            plt.errorbar(x, SE_900_14_0mV_npk, yerr=SE_900_14_0mV_npkerr, capsize=5, color=rms_plot.GAIN_COLOR['14_0'], linestyle='-.',
                          alpha=0.7, label='SE_900_14_0mV_npk')
-            plt.errorbar(x, SE_900_25_0mV_ppk, yerr=SE_900_25_0mV_ppkerr, capsize=5, color='darkblue', linestyle='--',
+            plt.errorbar(x, SE_900_25_0mV_ppk, yerr=SE_900_25_0mV_ppkerr, capsize=5, color=rms_plot.GAIN_COLOR['25_0'], linestyle='--',
                          alpha=0.7, label='SE_900_25_0mV_ppk')
-            plt.errorbar(x, SE_900_25_0mV_npk, yerr=SE_900_25_0mV_npkerr, capsize=5, color='darkblue', linestyle='--',
+            plt.errorbar(x, SE_900_25_0mV_npk, yerr=SE_900_25_0mV_npkerr, capsize=5, color=rms_plot.GAIN_COLOR['25_0'], linestyle='-.',
                          alpha=0.7, label='SE_900_25_0mV_npk')
             plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
             plt.xlabel("Peaking Time", fontsize=12)
@@ -789,7 +790,7 @@ class QC_reports:
                                log.check_log04_03_7820[femb_id]["ppk_std"],
                                log.check_log04_03_1420[femb_id]["ppk_std"],
                                log.check_log04_03_2520[femb_id]["ppk_std"]]
-            plt.errorbar(x, SGP1_200_ppk, yerr=SGP1_200_ppkerr, capsize=5, linestyle='-', alpha=0.7, color='darkgreen',
+            plt.errorbar(x, SGP1_200_ppk, yerr=SGP1_200_ppkerr, capsize=5, linestyle='-', alpha=0.7, color=rms_plot.MODE_COLOR['SEON'],
                          label='SGP1_200_ppk')
             plt.legend()
             plt.xlabel("Gain Setting", fontsize=12)
@@ -799,7 +800,7 @@ class QC_reports:
             plt.grid(True, axis='y', linestyle='--')
             for i in range(len(x)):
                 plt.text(x[i], SGP1_200_ppk[i] + 100, f'{round(SGP1_200_ppk[i], 1)}±{round(SGP1_200_ppkerr[i], 1)}',
-                         fontsize=10, ha='center', va='bottom', color='darkorange')
+                         fontsize=10, ha='center', va='bottom', color=rms_plot.INK)
             plt.title("SGP1 200 mVBL Amplitude ErrorBar", fontsize=12)
             plt.tight_layout()
             plt.ylim(0, 17000)
@@ -817,7 +818,7 @@ class QC_reports:
                 log.check_log04_04_14204[femb_id]["ppk_mean"] - log.check_log04_04_14204[femb_id]["bbl_mean"]]
             DIFF_200_ppkerr = [log.check_log04_04_14203[femb_id]["ppk_std"],
                                log.check_log04_04_14204[femb_id]["ppk_std"]]
-            plt.errorbar(x, DIFF_200_ppk, yerr=DIFF_200_ppkerr, capsize=5, linestyle='-', alpha=0.7, color='darkgreen',
+            plt.errorbar(x, DIFF_200_ppk, yerr=DIFF_200_ppkerr, capsize=5, linestyle='-', alpha=0.7, color=rms_plot.MODE_COLOR['DIFF'],
                          label='DIFF_ppk')
             plt.legend()
             plt.xlabel("Gain Setting", fontsize=12)
@@ -826,7 +827,7 @@ class QC_reports:
             plt.xticks(x, ['200 mV/fC', '900 mV/fC'])
             plt.grid(True, axis='y', linestyle='--')
             # for i in range(len(x)):
-            #     plt.text(x[i], SGP1_200_ppk[i] + 100, f'{round(SGP1_200_ppk[i], 1)}±{round(SGP1_200_ppkerr[i], 1)}', fontsize=10, ha='center', va='bottom', color='darkorange')
+            #     plt.text(x[i], SGP1_200_ppk[i] + 100, f'{round(SGP1_200_ppk[i], 1)}±{round(SGP1_200_ppkerr[i], 1)}', fontsize=10, ha='center', va='bottom', color=rms_plot.INK)
             plt.title("DIFF 200/900 mVBL Amplitude ErrorBar", fontsize=12)
             plt.tight_layout()
             plt.ylim(0, 17000)
@@ -929,6 +930,7 @@ class QC_reports:
         section_status = True
         check = [True, True, True, True]
         check_list = [[], [], [], []]
+        rms_marks = {i: {} for i in range(4)}  # {ifemb: {fname: {'fail': [ch], 'warn': [ch]}}}
         for ifemb in self.fembs:
             channel_fail_configs = {}
             for fname, bad_chans in rms_bad_per_cfg[ifemb].items():
@@ -939,6 +941,15 @@ class QC_reports:
                                 for ch, fnames in channel_fail_configs.items() if len(fnames) == 1}
             real_fail_set = {ch for ch, fnames in channel_fail_configs.items() if len(fnames) >= 2}
             log.report_log05_warning[ifemb] = warning_channels
+
+            # Per-configuration channel markers for the All_Configuration plots
+            for fname, bad_chans in rms_bad_per_cfg[ifemb].items():
+                rms_marks[ifemb].setdefault(fname, {'fail': [], 'warn': []})
+                for ch in bad_chans:
+                    rms_marks[ifemb][fname]['fail' if ch in real_fail_set else 'warn'].append(ch)
+            for fname, ped_issue in log.report_log054_pedestal_issue[ifemb].items():
+                rms_marks[ifemb].setdefault(fname, {'fail': [], 'warn': []})
+                rms_marks[ifemb][fname]['fail'].extend(ped_issue[0])
 
             real_bad_chans, real_bad_chips = [], []
             for fname, bad_chans in rms_bad_per_cfg[ifemb].items():
@@ -1049,85 +1060,15 @@ class QC_reports:
             # log.report_log05_table2[femb_id]["14 mV"] = " {} | {} | {} | {} | {} | {} |".format(log.report_log05_tablecell[ifemb]['SE_200mVBL_14_0mVfC_0_5us'], log.report_log05_tablecell[ifemb]['SE_200mVBL_14_0mVfC_1_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_14_0mVfC_2_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_14_0mVfC_3_0us'], log.report_log05_tablecell[ifemb]['SEON_900mVBL_14_0mVfC_2_0us'], log.report_log05_tablecell[ifemb]['DIFF_900mVBL_14_0mVfC_2_0us'])
             # log.report_log05_table2[femb_id]["25 mV"] = " {} | {} | {} | {} | {} | {} |".format(log.report_log05_tablecell[ifemb]['SE_200mVBL_25_0mVfC_0_5us'], log.report_log05_tablecell[ifemb]['SE_200mVBL_25_0mVfC_1_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_25_0mVfC_2_0us'], log.report_log05_tablecell[ifemb]['SE_900mVBL_25_0mVfC_3_0us'], log.report_log05_tablecell[ifemb]['SEON_900mVBL_25_0mVfC_2_0us'], log.report_log05_tablecell[ifemb]['DIFF_900mVBL_25_0mVfC_2_0us'])
 
-            plt.figure(figsize=(20, 4))
-            plt.subplot(1, 4, 1)
-            x_sticks = range(0, 129, 16)
-            for key in log.report_log053_rms[ifemb]:
-                if "SE_200mVBL_4_7mVfC" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7, color='red')
-                if "SE_200mVBL_7_8mVfC" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7, color='orange')
-                if "SE_200mVBL_14_0mVfC" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7, color='green')
-                if "SE_200mVBL_25_0mVfC" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7, color='blue')
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("SE OFF RMS", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("SE OFF 200 mV RMS Distribution", fontsize=12)
-            plt.subplot(1, 4, 2)
-            for key in log.report_log053_rms[ifemb]:
-                if "SEON_200" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7)
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("SEON RMS", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("SE ON 200 mV RMS Distribution", fontsize=12)
-            plt.subplot(1, 4, 3)
-            for key in log.report_log053_rms[ifemb]:
-                if "SELC_200" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7)
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("SELC RMS", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("SE Leakage Current 200 mV RMS Distribution", fontsize=12)
-            plt.subplot(1, 4, 4)
-            for key in log.report_log053_rms[ifemb]:
-                if "DIFF_200" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7)
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("DIFF RMS", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("DIFF 200 mV RMS Distribution", fontsize=12)
-            plt.savefig(fp + '200mV_All_Configuration.png')
-            plt.close()
-            plt.figure(figsize=(15, 4))
-            plt.subplot(1, 3, 1)
-            x_sticks = range(0, 129, 16)
-            for key in log.report_log053_rms[ifemb]:
-                if "SE_900" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7)
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("SE OFF RMS", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("SE OFF 900 mV RMS Distribution", fontsize=12)
-            plt.subplot(1, 3, 2)
-            for key in log.report_log053_rms[ifemb]:
-                if "SEON_900" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7)
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("SEON RMS", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("SE ON 900 mV RMS Distribution", fontsize=12)
-            plt.subplot(1, 3, 3)
-            for key in log.report_log053_rms[ifemb]:
-                if "DIFF_900" in key:
-                    plt.plot(range(128), log.report_log053_rms[ifemb][key], linestyle='-', alpha=0.7)
-            plt.xlabel("Channel", fontsize=12)
-            plt.ylabel("DIFF RMD", fontsize=12)
-            plt.xticks(x_sticks)
-            plt.grid(axis='x')
-            plt.title("DIFF 900 mV RMS Distribution", fontsize=12)
-            plt.savefig(fp + '900mV_All_Configuration.png')
-            plt.close()
+            env = self.logs.get('env', '')
+            for bl in ('200', '900'):
+                rms_plot.plot_all_configuration(
+                    log.report_log053_rms[ifemb], bl, fp + '{}mV_All_Configuration.png'.format(bl),
+                    'Noise vs. channel, all configurations  |  {} mV BL  |  FEMB {}  (slot {})  |  {}'.format(
+                        bl, self.fembsName['femb%d' % ifemb], ifemb, env),
+                    marks=rms_marks[ifemb])
             # error bar plot
-            plt.figure(figsize=(16, 9))
+            plt.figure(figsize=(9, 4.5))
             x = [0.5, 1, 2, 3]
             x_sticks = ()
             SE_200_4_7mV = [log.report_log056_fembrms[ifemb]["SE_200mVBL_4_7mVfC_0_5us"],
@@ -1196,25 +1137,25 @@ class QC_reports:
                                  log.report_log057_fembrmsstd[ifemb]["SE_900mVBL_25_0mVfC_3_0us"]]
             # for key in log.report_log056_fembrms[ifemb]:
             #     if "SE_200" in key:
-            plt.errorbar(x, SE_200_4_7mV, yerr=SE_200_4_7mV_err, capsize=5, linestyle='-', alpha=0.7, color='darkred',
+            plt.errorbar(x, SE_200_4_7mV, yerr=SE_200_4_7mV_err, capsize=5, linestyle='-', alpha=0.7, color=rms_plot.GAIN_COLOR['4_7'],
                          label='SE_200_4_7mV')
             plt.errorbar(x, SE_200_7_8mV, yerr=SE_200_7_8mV_err, capsize=5, linestyle='-', alpha=0.7,
-                         color='darkorange', label='SE_200_7_8mV')
+                         color=rms_plot.GAIN_COLOR['7_8'], label='SE_200_7_8mV')
             plt.errorbar(x, SE_200_14_0mV, yerr=SE_200_14_0mV_err, capsize=5, linestyle='-', alpha=0.7,
-                         color='darkgreen', label='SE_200_14_0mV')
+                         color=rms_plot.GAIN_COLOR['14_0'], label='SE_200_14_0mV')
             plt.errorbar(x, SE_200_25_0mV, yerr=SE_200_25_0mV_err, capsize=5, linestyle='-', alpha=0.7,
-                         color='darkblue', label='SE_200_25_0mV')
-            plt.errorbar(x, SE_900_4_7mV, yerr=SE_900_4_7mV_err, capsize=5, linestyle='--', alpha=0.7, color='darkred',
+                         color=rms_plot.GAIN_COLOR['25_0'], label='SE_200_25_0mV')
+            plt.errorbar(x, SE_900_4_7mV, yerr=SE_900_4_7mV_err, capsize=5, linestyle='--', alpha=0.7, color=rms_plot.GAIN_COLOR['4_7'],
                          label='SE_900_4_7mV')
             plt.errorbar(x, SE_900_7_8mV, yerr=SE_900_7_8mV_err, capsize=5, linestyle='--', alpha=0.7,
-                         color='darkorange', label='SE_900_7_8mV')
+                         color=rms_plot.GAIN_COLOR['7_8'], label='SE_900_7_8mV')
             plt.errorbar(x, SE_900_14_0mV, yerr=SE_900_14_0mV_err, capsize=5, linestyle='--', alpha=0.7,
-                         color='darkgreen', label='SE_900_14_0mV')
+                         color=rms_plot.GAIN_COLOR['14_0'], label='SE_900_14_0mV')
             plt.errorbar(x, SE_900_25_0mV, yerr=SE_900_25_0mV_err, capsize=5, linestyle='--', alpha=0.7,
-                         color='darkblue', label='SE_900_25_0mV')
+                         color=rms_plot.GAIN_COLOR['25_0'], label='SE_900_25_0mV')
             plt.legend()
             plt.xlabel("Peaking Time / us", fontsize=12)
-            plt.ylabel("RMS", fontsize=12)
+            plt.ylabel("RMS noise [ADC counts]", fontsize=12)
             # plt.yticks([log.report_log056_fembrms[ifemb]["SE_200mVBL_4_7mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_7_8mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_14_0mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_25_0mVfC_0_5us"]], ['4.7 mV', '7.8 mV', '14 mV', '25 mV'])
             plt.xticks(x, ['0.5', '1', '2', '3'])
             plt.ylim(0, 70)
@@ -1257,15 +1198,15 @@ class QC_reports:
             # for key in log.report_log056_fembrms[ifemb]:
             #     if "SE_200" in key:
             plt.errorbar(x, SEON_200_2_0us, yerr=SEON_200_2_0us_err, capsize=5, linestyle='-', alpha=0.7,
-                         color='darkred', label='SEON_200_2_0us')
+                         color=rms_plot.MODE_COLOR['SEON'], label='SEON_200_2_0us')
             # plt.errorbar(x, SEON_900_2_0us, yerr=SEON_900_2_0us_err,capsize=5, linestyle='-', alpha=0.7, color = 'darkgreen', label = 'SEON_900_2_0us')
-            plt.errorbar(x, DIFF_200_2_0us, yerr=DIFF_200_2_0us_err, capsize=5, linestyle='--', alpha=1,
-                         color='darkblue', label='DIFF_200_2_0us')
+            plt.errorbar(x, DIFF_200_2_0us, yerr=DIFF_200_2_0us_err, capsize=5, linestyle='-', alpha=1,
+                         color=rms_plot.MODE_COLOR['DIFF'], label='DIFF_200_2_0us')
             plt.errorbar(x, DIFF_900_2_0us, yerr=DIFF_900_2_0us_err, capsize=5, linestyle='--', alpha=1,
-                         color='darkorange', label='DIFF_900_2_0us')
+                         color=rms_plot.MODE_COLOR['DIFF'], label='DIFF_900_2_0us')
             plt.legend()
             plt.xlabel("Gain / (mV/fC)", fontsize=12)
-            plt.ylabel("RMS", fontsize=12)
+            plt.ylabel("RMS noise [ADC counts]", fontsize=12)
             # plt.yticks([log.report_log056_fembrms[ifemb]["SE_200mVBL_4_7mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_7_8mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_14_0mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_25_0mVfC_0_5us"]], ['4.7 mV', '7.8 mV', '14 mV', '25 mV'])
             plt.xticks(x, ['4.7', '7.8', '14', '25'])
             plt.grid(axis='x')
@@ -1288,11 +1229,11 @@ class QC_reports:
                                   log.report_log057_fembrmsstd[ifemb]["SELC_200mVBL_14_0mVfC_2_0us_5nA"]]
             # for key in log.report_log056_fembrms[ifemb]:
             #     if "SE_200" in key:
-            plt.errorbar(x, SELC_200_2_0us, yerr=SELC_200_2_0us_err, capsize=5, linestyle='-', alpha=0.7, color='blue',
+            plt.errorbar(x, SELC_200_2_0us, yerr=SELC_200_2_0us_err, capsize=5, linestyle='-', alpha=0.7, color=rms_plot.GAIN_COLOR['14_0'],
                          label='SELC_200_2_0us')
             plt.legend()
             plt.xlabel("Leakage Current / pA", fontsize=12)
-            plt.ylabel("RMS", fontsize=12)
+            plt.ylabel("RMS noise [ADC counts]", fontsize=12)
             # plt.yticks([log.report_log056_fembrms[ifemb]["SE_200mVBL_4_7mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_7_8mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_14_0mVfC_0_5us"], log.report_log056_fembrms[ifemb]["SE_200mVBL_25_0mVfC_0_5us"]], ['4.7 mV', '7.8 mV', '14 mV', '25 mV'])
             plt.xticks(x, ['100', '500', '1 000', '5 000'])
             plt.grid(axis='x')

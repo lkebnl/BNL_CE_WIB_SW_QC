@@ -225,12 +225,28 @@ def get_html_template(title, content):
 
 def markdown_to_html(md_content):
     """
+    Markdown 到 HTML 转换
+    优先使用 python-markdown (支持表格、#### 标题、<details> 内的 Markdown)，
+    未安装时退回到下面的简单正则转换
+    """
+    try:
+        import markdown
+    except ImportError:
+        return _simple_markdown_to_html(md_content)
+    # <details> 内的内容默认不解析，加 markdown="1" 让 md_in_html 处理
+    md_content = re.sub(r'<details(?![^>]*markdown=)([^>]*)>', r'<details markdown="1"\1>', md_content)
+    return markdown.markdown(md_content, extensions=['tables', 'md_in_html'])
+
+
+def _simple_markdown_to_html(md_content):
+    """
     简单的 Markdown 到 HTML 转换
     处理常见的 Markdown 语法
     """
     html = md_content
 
     # 转换标题 (必须先处理长的，再处理短的)
+    html = re.sub(r'^#### (.+)$', r'<h4>\1</h4>', html, flags=re.MULTILINE)
     html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
     html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
     html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
@@ -247,11 +263,11 @@ def markdown_to_html(md_content):
 
     # 转换粗体 **text** 或 __text__
     html = re.sub(r'\*\*([^\*]+)\*\*', r'<strong>\1</strong>', html)
-    html = re.sub(r'__([^_]+)__', r'<strong>\1</strong>', html)
+    html = re.sub(r'(?<!\w)__([^_\n]+)__(?!\w)', r'<strong>\1</strong>', html)
 
     # 转换斜体 *text* 或 _text_
     html = re.sub(r'\*([^\*]+)\*', r'<em>\1</em>', html)
-    html = re.sub(r'_([^_]+)_', r'<em>\1</em>', html)
+    html = re.sub(r'(?<!\w)_([^_\n]+)_(?!\w)', r'<em>\1</em>', html)
 
     # 转换代码 `code`
     html = re.sub(r'`([^`]+)`', r'<code>\1</code>', html)
